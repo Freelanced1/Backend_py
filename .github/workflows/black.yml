@@ -1,5 +1,14 @@
 name: black
-on: [push,pull_request]
+on: 
+  pull_request:
+      paths: 
+        -"**.py"
+  push:
+    paths:
+      -"**.py"
+    branches:
+      [master]
+    
 jobs:
   black:
     runs-on: ubuntu-20.04
