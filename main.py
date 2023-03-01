@@ -1,58 +1,89 @@
-from __future__ import print_function
+import logging
+import os
+import uuid
+import psycopg2
+from fastapi import FastAPI, Request, Query, BackgroundTasks
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 
-import os.path
+sql_user = os.environ["suser"]
+sql_host = os.environ["shost"]
+sql_pass = os.environ["spassword"]
 
-from google.auth.transport.requests import Request
-from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
-from googleapiclient.discovery import build
-from googleapiclient.errors import HttpError
+app = FastAPI(
+    title="Freelanced",
+    description="User Registraion and Info API",
+    version="0.1.1",
+    openapi_url="/api/v0.1.1/openapi.json",
+)
 
-# If modifying these scopes, delete the file token.json.
-SCOPES = ['https://www.googleapis.com/auth/contacts.readonly']
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
+try:
+    connection = psycopg2.connect(user=sql_user,
+                                  password=sql_pass,
+                                  host=sql_host,
+                                  port="5432",
+                                  database="postgres")
+    cursor = connection.cursor()
+except (Exception, psycopg2.Error) as error:
+    print("Error while connecting to PostgreSQL", error)
 
-def main():
-    """Shows basic usage of the People API.
-    Prints the name of the first 10 connections.
-    """
-    creds = None
-    # The file token.json stores the user's access and refresh tokens, and is
-    # created automatically when the authorization flow completes for the first
-    # time.
-    if os.path.exists('token.json'):
-        creds = Credentials.from_authorized_user_file('token.json', SCOPES)
-    # If there are no (valid) credentials available, let the user log in.
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file(
-                'credentials.json', SCOPES) #Get from ENV.
-            creds = flow.run_local_server(port=0)
-        # Save the credentials for the next run
-        with open('token.json', 'w') as token:
-            token.write(creds.to_json())
+class Item(BaseModel):
+    username: str = Query(...)
+    email: str = Query(...)
+    Firstname: str = Query(...)
+    Lastname: str = Query(...)
 
+# Add a new user to the database
+
+@app.post("/newuser")
+async def new_user(item: Item, background_tasks: BackgroundTasks):
     try:
-        service = build('people', 'v1', credentials=creds)
+        cursor.execute("INSERT INTO user_details.user_details (username, email, Firstname, Lastname) VALUES (%s, %s, %s, %s)", (item.username, item.email, item.Firstname, item.Lastname))
+        connection.commit()
+        count = cursor.rowcount
+        print(count, "Record inserted successfully into users table")
+        return {"message": "User added successfully"}
+    except (Exception, psycopg2.Error) as error:
+        print("Error while connecting to PostgreSQL", error)
+        return {"message": "User not added"}
 
-        # Call the People API
-        print('List 10 connection names')
-        results = service.people().connections().list(
-            resourceName='people/me',
-            pageSize=10,
-            personFields='names,emailAddresses').execute()
-        connections = results.get('connections', [])
+# Get user Info from the database
 
-        for person in connections:
-            names = person.get('names', [])
-            if names:
-                name = names[0].get('displayName')
-                print(name)
-    except HttpError as err:
-        print(err)
+@app.get("/getuser/{username}")
+async def get_user(username: str):
+    try:
+        cursor.execute("SELECT * FROM user_details.user_details WHERE username = %s", (username))
+        item = cursor.fetchone()
+        return {"username": item[0], "email": item[1], "Firstname": item[2], "Lastname": item[3]}
+    except (Exception, psycopg2.Error) as error:
+        print("Error while connecting to PostgreSQL", error)
+        return {"message": "User not found"}
+
+# Update user Info in the database
+@app.put("/updateuser/{username}")
+async def update_user(username: str, item: Item):
+    try:
+        cursor.execute("UPDATE user_details.user_details SET email = %s, Firstname = %s, Lastname = %s WHERE username = %s", (item.email, item.Firstname, item.Lastname, username))
+        connection.commit()
+        return {"message": "User updated successfully"}
+    except (Exception, psycopg2.Error) as error:
+        print("Error while connecting to PostgreSQL", error)
+        return {"message": "User not updated"}
 
 
-if __name__ == '__main__':
-    main()
+
+
+
+
+
+
+
+
