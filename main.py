@@ -12,7 +12,7 @@ from fastapi import FastAPI, Body, HTTPException, status
 from fastapi.responses import Response, JSONResponse
 from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel, Field, EmailStr
-from bson import ObjectId
+from bson.objectid import ObjectId
 from typing import Optional, List
 import motor.motor_asyncio
 from fastapi import FastAPI, Depends
@@ -284,8 +284,8 @@ async def search_mongo(phrase: str):
 #
 #
 #
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
+# if __name__ == "__main__":
+#     uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
 
 
 
