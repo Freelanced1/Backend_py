@@ -30,15 +30,16 @@ from fastapi.security import (
     SecurityScopes,
 )
 #
-sql_user = os.environ["suser"]
-sql_host = os.environ["shost"]
-sql_pass = os.environ["spassword"]
-mongodb_url = os.environ["mongodb_url"]
+sql_user = "freelanced"
+sql_host = "freelanced1.postgres.database.azure.com"
+sql_pass = "Abc12345"
+sql_db = "freelanced"
+mongodb_url = "mongodb://freelancedmongo:KfvFJ40xUPSPbMsUlhKZC9s3LC7CYZ9T8Cl7gCsTenFulvbTAmDTlVidmMn4JOTXVqipu75qILasACDbYBdzdQ==@freelancedmongo.mongo.cosmos.azure.com:10255/?ssl=true&replicaSet=globaldb&retrywrites=false&maxIdleTimeMS=120000&appName=@freelancedmongo@"
 
 # Google OAuth2 credentials
-GOOGLE_CLIENT_ID = os.environ["GOOGLE_CLIENT_ID"]
-GOOGLE_CLIENT_SECRET = os.environ["GOOGLE_CLIENT_SECRET"]
-connect_str = os.getenv('connect_str')
+GOOGLE_CLIENT_ID = "825776228723-acjhna5u0tf3730fj8eam3vbk3irr23u.apps.googleusercontent.com"
+GOOGLE_CLIENT_SECRET = "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"
+connect_str = "DefaultEndpointsProtocol=https;AccountName=freelancedblob;AccountKey=yPM6hyAFgkBdKlojas28omizW+qOXmMc/goQkXCTec1hvplFlwlyKEwByiyL5cqhel6fcJUu/IfL+AStKBid1w==;EndpointSuffix=core.windows.net"
 
 
 GOOGLE_DISCOVERY_URL = "https://accounts.google.com/.well-known/openid-configuration"
@@ -182,7 +183,7 @@ the login endpoint redirects the user to the Google OAuth2 login page. After the
 async def login():
     # Redirect user to Google OAuth2 login page
     return RedirectResponse(
-        url=f"https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id={GOOGLE_CLIENT_ID}&redirect_uri=http://127.0.0.1:8000/callback&scope=openid%20email%20profile")
+        url=f"https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id={GOOGLE_CLIENT_ID}&redirect_uri=https://freelancedbackend.azurewebsites.net/callback&scope=openid%20email%20profile")
 @app.get("/callback", response_class=HTMLResponse)
 def callback(code: str, error: str = None):
     if error:
@@ -193,7 +194,7 @@ def callback(code: str, error: str = None):
             "code": code,
             "client_id": GOOGLE_CLIENT_ID,
             "client_secret": GOOGLE_CLIENT_SECRET,
-            "redirect_uri": "http://127.0.0.1:8000/callback", # might need to change this
+            "redirect_uri": "https://freelancedbackend.azurewebsites.net/callback", # might need to change this
             "grant_type": "authorization_code"
         }
         token_response = requests.post("https://oauth2.googleapis.com/token", data=data)
@@ -410,9 +411,10 @@ async def upload_image( item: Uploader,file: UploadFile = File(...)):
         print(e)
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
+# portx = os.environ.get('PORT', 8000)
+# if __name__ == "__main__":
+#     uvicorn.run(app, host="0.0.0.0", port = portx, reload=True)
 
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
 
 
 
