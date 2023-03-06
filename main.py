@@ -183,7 +183,7 @@ the login endpoint redirects the user to the Google OAuth2 login page. After the
 async def login():
     # Redirect user to Google OAuth2 login page
     return RedirectResponse(
-        url=f"https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id={GOOGLE_CLIENT_ID}&redirect_uri=http://127.0.0.1:8000/callback&scope=openid%20email%20profile")
+        url=f"https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id={GOOGLE_CLIENT_ID}&redirect_uri=https://freelancedbackend.azurewebsites.net/callback&scope=openid%20email%20profile")
 @app.get("/callback", response_class=HTMLResponse)
 def callback(code: str, error: str = None):
     if error:
@@ -194,7 +194,7 @@ def callback(code: str, error: str = None):
             "code": code,
             "client_id": GOOGLE_CLIENT_ID,
             "client_secret": GOOGLE_CLIENT_SECRET,
-            "redirect_uri": "http://127.0.0.1:8000/callback", # might need to change this
+            "redirect_uri": "https://freelancedbackend.azurewebsites.net/callback", # might need to change this
             "grant_type": "authorization_code"
         }
         token_response = requests.post("https://oauth2.googleapis.com/token", data=data)
