@@ -365,6 +365,7 @@ async def search_mongo(phrase: str):
             print(e)
             raise HTTPException(status_code=500, detail="Internal Server Error")
 
+
 @app.get("/searchrecruiterdetailsmongo/{phrase}",response_description="Stringified List of keywords seperated by comma")
 async def search_mongo(phrase: str):
     keywords = list(phrase.split(","))
@@ -410,11 +411,9 @@ async def upload_image( item: Uploader,file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
 
-
-
-
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
+
 
 
 
