@@ -3,6 +3,7 @@ import logging
 import os
 import uuid
 import psycopg2
+import pymongo
 from fastapi import FastAPI, Request, Query, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -23,6 +24,7 @@ from google.auth.transport import requests as google_requests
 import requests
 from fastapi import FastAPI, File, UploadFile
 from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient
+import certifi
 
 from fastapi.security import (
     OAuth2PasswordBearer,
@@ -93,8 +95,9 @@ except (Exception, psycopg2.Error) as error:
     print("Error while connecting to PostgreSQL", error)
 
 try:
-    mongo_client = motor.motor_asyncio.AsyncIOMotorClient(mongodb_url)
-    db = mongo_client.freelanced
+    mongo_client = mongo_client = motor.motor_asyncio.AsyncIOMotorClient(mongodb_url,tlsCAFile= certifi.where())
+    db1 = mongo_client.user
+    db2 = mongo_client.recruiter
 except Exception as e:
     print(e)
 
@@ -107,28 +110,27 @@ except Exception as e:
 
 class Item(BaseModel):
     email: str = Query(...)
-    Firstname: str = Query(...)
-    Lastname: str = Query(...)
+    firstname: str = Query(...)
+    lastname: str = Query(...)
 
 
 class User(BaseModel):
-    id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
     email: str = Query(...)
     phone: str = Query(...)
-    profile_pic: Optional[str] = Field(...)
-    worksamples: Optional[list] = Field(...)
-    website: Optional[str] = Field(...)
-    description: Optional[str] = Field(...)
-    language: Optional[str] = Field(...)
-    occupation: Optional[str] = Field(...)
-    experience: Optional[int] = Field(...)
-    university: Optional[str] = Field(...)
-    uni_country: Optional[str] = Field(...)
-    uni_degree: Optional[str] = Field(...)
-    uni_grad_date: Optional[str] = Field(...)
-    skills: Optional[list] = Field(...)
-    proficency: Optional[list] = Field(...)
-    certificates: Optional[list] = Field(...)
+    profile_pic: Optional[str] = Query(...)
+    worksamples: Optional[list] = Query(...)
+    website: Optional[str] = Query(...)
+    description: Optional[str] = Query(...)
+    language: Optional[str] = Query(...)
+    occupation: Optional[str] = Query(...)
+    experience: Optional[int] = Query(...)
+    university: Optional[str] = Query(...)
+    uni_country: Optional[str] = Query(...)
+    uni_degree: Optional[str] = Query(...)
+    uni_grad_date: Optional[str] = Query(...)
+    skills: Optional[list] = Query(...)
+    proficency: Optional[list] = Query(...)
+    certificates: Optional[list] = Query(...)
 
     class Config:
         allow_population_by_field_name = True
@@ -137,25 +139,25 @@ class User(BaseModel):
 
 
 class Recruiter(BaseModel):
-    id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
     email: str = Query(...)
     phone: str = Query(...)
-    profile_pic: Optional[str] = Field(...)
-    language: Optional[str] = Field(...)
-    occupation: Optional[str] = Field(...)
-    project_area: Optional[list] = Field(...)
-    project_area_details: Optional[list] = Field(...)
-    documents: Optional[list] = Field(...)
-    skills: Optional[list] = Field(...)
-    proficency: Optional[list] = Field(...)
-    timeline: Optional[bool] = Field(...)
-    deadline: Optional[str] = Field(...)
-    budget: Optional[str] = Field(...)
+    profile_pic: Optional[str] = Query(...)
+    language: Optional[str] = Query(...)
+    occupation: Optional[str] = Query(...)
+    project_area: Optional[list] = Query(...)
+    project_area_details: Optional[list] = Query(...)
+    documents: Optional[list] = Query(...)
+    skills: Optional[list] = Query(...)
+    proficency: Optional[list] = Query(...)
+    timeline: Optional[bool] = Query(...)
+    deadline: Optional[str] = Query(...)
+    budget: Optional[str] = Query(...)
 
     class Config:
         allow_population_by_field_name = True
         arbitrary_types_allowed = True
         json_encoders = {ObjectId: str}
+
 
 #
 class Uploader(BaseModel):
@@ -223,7 +225,7 @@ def protected_route(token: str = Depends(oauth2_scheme)):
 @app.get("/userexists/{email}")
 async def user_exists(email: str):
     try:
-        cursor.execute("SELECT * FROM public.user_login_1 WHERE email = %s", (email))
+        cursor.execute("SELECT * FROM public.user_login_1 WHERE email = %s", (email,))
         item = cursor.fetchone()
         if item is None:
             raise HTTPException(status_code=404, detail="Item not found")
@@ -239,7 +241,7 @@ async def user_exists(email: str):
 async def new_user(item: Item, background_tasks: BackgroundTasks):
     try:
         #Create User ID#
-        cursor.execute("INSERT INTO public.user_login_1 (email, firstname, lastname) VALUES (%s, %s, %s, %s)", (item.email, item.Firstname, item.Lastname))
+        cursor.execute("INSERT INTO public.user_login_1 (email, firstname, lastname) VALUES (%s, %s, %s)", (item.email, item.firstname, item.lastname,))
         connection.commit()
         count = cursor.rowcount
         print(count, "Record inserted successfully into users table")
@@ -253,7 +255,7 @@ async def new_user(item: Item, background_tasks: BackgroundTasks):
 async def new_recruiter(item: Item, background_tasks: BackgroundTasks):
     try:
         #Create User ID#
-        cursor.execute("INSERT INTO public.buisness_login (email, firstname, lastname) VALUES (%s, %s, %s, %s)", (item.email, item.Firstname, item.Lastname))
+        cursor.execute("INSERT INTO public.business_login (email, firstname, lastname) VALUES (%s, %s, %s)", (item.email, item.firstname, item.lastname,))
         connection.commit()
         count = cursor.rowcount
         print(count, "Record inserted successfully into users table")
@@ -265,9 +267,12 @@ async def new_recruiter(item: Item, background_tasks: BackgroundTasks):
 @app.get("/getuser/{email}")
 async def get_user(email: str):
     try:
-        cursor.execute("SELECT * FROM public.user_login_1 WHERE email = %s", (email))
+        cursor.execute("SELECT * FROM public.user_login_1 WHERE email = %s", (email,))
         item = cursor.fetchone()
-        return {"email": item[0], "Firstname": item[1], "Lastname": item[2]}
+        if item is None:
+            raise HTTPException(status_code=404, detail="Item not found")
+        else:
+            return {"email": item[2], "Firstname": item[0], "Lastname": item[1]}
     except (Exception, psycopg2.Error) as error:
         print("Error while connecting to PostgreSQL", error)
         raise HTTPException(status_code=500, detail="Internal Server Error")
@@ -276,18 +281,21 @@ async def get_user(email: str):
 @app.get("/getbusiness/{email}")
 async def get_buisness(email: str):
     try:
-        cursor.execute("SELECT * FROM public.buisness_login WHERE email = %s", (email))
+        cursor.execute("SELECT * FROM public.business_login WHERE email = %s", (email,))
         item = cursor.fetchone()
-        return {"email": item[0], "Firstname": item[1], "Lastname": item[2]}
+        if item is None:
+            raise HTTPException(status_code=404, detail="Item not found")
+        else:
+            return {"email": item[2], "Firstname": item[0], "Lastname": item[1]}
     except (Exception, psycopg2.Error) as error:
         print("Error while connecting to PostgreSQL", error)
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
 
 @app.put("/updateuser/{email}")
-async def update_user(email: str, item: Item):
+async def update_user(email: str,item: Item):
     try:
-        cursor.execute("UPDATE public.user_login_1 SET Firstname = %s, Lastname = %s WHERE email = %s", (email, item.Firstname, item.Lastname))
+        cursor.execute("UPDATE public.user_login_1 SET firstname = %s, lastname = %s WHERE email = %s", (item.firstname, item.lastname,email,))
         connection.commit()
         return {"message": "User updated successfully"}
     except (Exception, psycopg2.Error) as error:
@@ -297,7 +305,7 @@ async def update_user(email: str, item: Item):
 @app.put("/updaterecriter/{email}")
 async def update_user(email: str, item: Item):
     try:
-        cursor.execute("UPDATE public.buisness_login SET Firstname = %s, Lastname = %s WHERE email = %s", (email, item.Firstname, item.Lastname))
+        cursor.execute("UPDATE public.business_login SET firstname = %s, lastname = %s WHERE email = %s", (item.firstname, item.lastname, email,))
         connection.commit()
         return {"message": "User updated successfully"}
     except (Exception, psycopg2.Error) as error:
@@ -308,45 +316,73 @@ async def update_user(email: str, item: Item):
 #MONGODB
 
 # Add a new user to the database
-@app.post("/newusermongo")
+@app.post("/newusermongo/")
 async def new_user_mongo(item: User):
     try:
-        document = item.dict()
-        result = await db.user_details.insert_one(document)
-        return {"message": "User added successfully"}
+        collection_name = str(item.email)
+        itemx = item.dict()
+        itemx["_id"] = str(ObjectId())
+        await db1.create_collection(collection_name)
+        collection = db1[collection_name]
+        await collection.insert_one(itemx)
+        # save id to postgres also for future use
+
+        return {"message": "Item created successfully", "id": itemx["_id"]}
+
+
+
     except Exception as e:
         print(e)
         raise HTTPException(status_code=500, detail="Internal Server Error, User not added")
 
-@app.post("/newrecruitermongo")
+@app.post("/newrecruitermongo/")
 async def new_recruiter_mongo(item: Recruiter):
     try:
-        document = item.dict()
-        result = await db.buisness_details.insert_one(document)
-        return {"message": "User added successfully"}
+        collection_name = str(item.email)
+        itemx = item.dict()
+        itemx["_id"] = str(ObjectId())
+        await db2.create_collection(collection_name)
+        collection = db2[collection_name]
+        await collection.insert_one(itemx)
+        #save id to postgres also for future use
+
+        return {"message": "Item created successfully","id":itemx["_id"]}
+
+
+
     except Exception as e:
         print(e)
         raise HTTPException(status_code=500, detail="Internal Server Error, User not added")
 
 #
-@app.get("/getusermongo/{email}")
-async def get_user_mongo(email: str):
+@app.get("/getusermongo/{email}/{item_id}")
+async def get_user_mongo(email: str, item_id: str):
     try:
-        if (result := await db.user_details.find_one({"username": email})) is not None:
-            return result
+        collection = db1[email]
+
+        item = await collection.find_one({"_id": item_id})
+        if item:
+            return item
         else:
-            raise HTTPException(status_code=404, detail="Item not found")
+            return {"message": "Item not found"}
+        # else:
+        #     raise HTTPException(status_code=404, detail="Item not found")
     except Exception as e:
         print(e)
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
-@app.get("/getrecruitermongo/{email}")
-async def get_user_mongo(email: str):
+@app.get("/getrecruitermongo/{email}/{item_id}")
+async def get_user_mongo(email: str, item_id: str):
     try:
-        if (result := await db.buisness_details.find_one({"username": email})) is not None:
-            return result
+        collection = db2[email]
+
+        item = await collection.find_one({"_id": item_id})
+        if item:
+            return item
         else:
-            raise HTTPException(status_code=404, detail="Item not found")
+            return {"message": "Item not found"}
+        # else:
+        #     raise HTTPException(status_code=404, detail="Item not found")
     except Exception as e:
         print(e)
         raise HTTPException(status_code=500, detail="Internal Server Error")
@@ -360,12 +396,11 @@ async def search_mongo(phrase: str):
     try:
         for ix in keywords:
 
-            result = await db.user_details.find({"$text": {"$search": str(ix).lower(), "$caseSensitive": False, "$diacriticSensitive": False}})
+            result = await db1.find({"$text": {"$search": str(ix).lower(), "$caseSensitive": False, "$diacriticSensitive": False}})
             return result
     except Exception as e:
             print(e)
             raise HTTPException(status_code=500, detail="Internal Server Error")
-
 
 @app.get("/searchrecruiterdetailsmongo/{phrase}",response_description="Stringified List of keywords seperated by comma")
 async def search_mongo(phrase: str):
@@ -373,13 +408,12 @@ async def search_mongo(phrase: str):
     try:
         for ix in keywords:
 
-            result = await db.buisness_details.find({"$text": {"$search": str(ix).lower(), "$caseSensitive": False, "$diacriticSensitive": False}})
+            result = await db2.find({"$text": {"$search": str(ix).lower(), "$caseSensitive": False, "$diacriticSensitive": False}})
             return result
     except Exception as e:
             print(e)
             raise HTTPException(status_code=500, detail="Internal Server Error")
 
-#Upload Image
 
 def check_existance(containername):
     container_client = blob_service_client.get_container_client(containername)
@@ -413,7 +447,7 @@ async def upload_image( item: Uploader,file: UploadFile = File(...)):
 
 # portx = os.environ.get('PORT', 8000)
 # if __name__ == "__main__":
-#     uvicorn.run(app, host="0.0.0.0", port = portx, reload=True)
+#     uvicorn.run(app, host="0.0.0.0", port = '0.0.0.0', reload=True)
 
 
 
