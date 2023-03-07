@@ -327,7 +327,11 @@ async def new_user_mongo(item: User):
         await collection.insert_one(itemx)
         # save id to postgres also for future use
 
-        return {"message": "Item created successfully", "id": itemx["_id"]}
+        # write to postgres
+        cursor.execute("UPDATE public.user_login_1 SET id = %s WHERE email = %s", (str(itemx["_id"]), str(itemx["email"]),))
+        connection.commit()
+
+        return {"message": "Item created successfully & User updated successfully", "id": itemx["_id"]}
 
 
 
@@ -346,7 +350,12 @@ async def new_recruiter_mongo(item: Recruiter):
         await collection.insert_one(itemx)
         #save id to postgres also for future use
 
-        return {"message": "Item created successfully","id":itemx["_id"]}
+        #write to postgres
+        cursor.execute("UPDATE public.business_login SET id = %s WHERE email = %s", (str(itemx["_id"]), str(itemx["email"]),))
+        connection.commit()
+
+
+        return {"message": "Item created successfully & User updated successfully","id":itemx["_id"]}
 
 
 
@@ -446,8 +455,8 @@ async def upload_image( item: Uploader,file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
 # portx = os.environ.get('PORT', 8000)
-# if __name__ == "__main__":
-#     uvicorn.run(app, host="0.0.0.0", port = '0.0.0.0', reload=True)
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port = '0.0.0.0', reload=True)
 
 
 
