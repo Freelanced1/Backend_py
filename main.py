@@ -455,8 +455,8 @@ async def upload_image( item: Uploader,file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
 # portx = os.environ.get('PORT', 8000)
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port = '0.0.0.0', reload=True)
+# if __name__ == "__main__":
+#     uvicorn.run(app, host="0.0.0.0", port = '0.0.0.0', reload=True)
 
 
 
