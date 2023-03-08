@@ -247,8 +247,7 @@ async def new_user(item: Item, background_tasks: BackgroundTasks):
         print(count, "Record inserted successfully into users table")
         return {"message": "User added successfully"}
     except (Exception, psycopg2.Error) as error:
-        print("Error while connecting to PostgreSQL", error)
-        raise HTTPException(status_code=500, detail="Internal Server Error")
+        return{"message":error}
 
 # Get user Info from the database
 @app.post("/newrecruiter")
@@ -261,8 +260,7 @@ async def new_recruiter(item: Item, background_tasks: BackgroundTasks):
         print(count, "Record inserted successfully into users table")
         return {"message": "User added successfully"}
     except (Exception, psycopg2.Error) as error:
-        print("Error while connecting to PostgreSQL", error)
-        raise HTTPException(status_code=500, detail="Internal Server Error")
+        return{"message":error}
 
 @app.get("/getuser/{email}")
 async def get_user(email: str):
