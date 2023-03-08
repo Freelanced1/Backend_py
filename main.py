@@ -277,6 +277,15 @@ async def get_user(email: str):
         print("Error while connecting to PostgreSQL", error)
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
+#@app.delete("/deleteuser/{email}")  #DELETE USER
+async def delete_user(email: str):
+    try:
+        cursor.execute("DELETE FROM public.user_login_1 WHERE email = %s", (email))
+        raise "Item Deleted"
+    except (Exception, psycopg2.Error) as error:
+        print("Error while connecting to PostgreSQL", error)
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+
 # Update user Info in the database
 @app.get("/getbusiness/{email}")
 async def get_buisness(email: str):
@@ -333,11 +342,45 @@ async def new_user_mongo(item: User):
 
         return {"message": "Item created successfully & User updated successfully", "id": itemx["_id"]}
 
-
-
     except Exception as e:
         print(e)
         raise HTTPException(status_code=500, detail="Internal Server Error, User not added")
+
+@app.put("/updateusermongo/")  #User Update
+async def update_user_mongo(item: User):
+    try:
+        collection_name = str(item.email)
+        itemx = item.dict()
+        itemx["_id"] = str(ObjectId())
+        collection = db1[collection_name]
+        await collection.update_one(itemx)
+        # save id to postgres also for future use
+        # write to postgres
+        cursor.execute("UPDATE public.user_login_1 SET id = %s WHERE email = %s", (str(itemx["_id"]), str(itemx["email"]),))
+        connection.commit()
+        return {"message": "Item updated successfully & User updated successfully", "id": itemx["_id"]}
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=500, detail="Internal Server Error, User not added")
+
+
+@app.put("/recruiter_mongo/")   #Recruiter Mongo
+async def update_user_mongo(item: User):
+    try:
+        collection_name = str(item.email)
+        itemx = item.dict()
+        itemx["_id"] = str(ObjectId())
+        collection = db1[collection_name]
+        await collection.update_one(itemx)
+        # save id to postgres also for future use
+        # write to postgres
+        cursor.execute("UPDATE public.business_login SET id = %s WHERE email = %s", (str(itemx["_id"]), str(itemx["email"]),))
+        connection.commit()
+        return {"message": "Item updated successfully & Business updated successfully", "id": itemx["_id"]}
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=500, detail="Internal Server Error, Business not updated")
+
 
 @app.post("/newrecruitermongo/")
 async def new_recruiter_mongo(item: Recruiter):
@@ -354,11 +397,24 @@ async def new_recruiter_mongo(item: Recruiter):
         cursor.execute("UPDATE public.business_login SET id = %s WHERE email = %s", (str(itemx["_id"]), str(itemx["email"]),))
         connection.commit()
 
-
         return {"message": "Item created successfully & User updated successfully","id":itemx["_id"]}
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=500, detail="Internal Server Error, User not added")
 
-
-
+@app.delete("/deleterecruitermongo/")   #DELETE PENDING
+async def new_recruiter_mongo( item: Recruiter):
+    try:
+        collection_name = str(item.email)
+        itemx = item.dict()
+        itemx["_id"] = str(ObjectId())
+        collection = db2[collection_name]
+        await collection.delete_one(itemx)
+        #save id to postgres also for future use
+        #write to postgres
+        cursor.execute("UPDATE public.business_login SET id = %s WHERE email = %s", (str(itemx["_id"]), str(itemx["email"]),))
+        connection.commit()
+        return {"message": "Item created successfully & User updated successfully","id":itemx["_id"]}
     except Exception as e:
         print(e)
         raise HTTPException(status_code=500, detail="Internal Server Error, User not added")
@@ -379,6 +435,8 @@ async def get_user_mongo(email: str, item_id: str):
     except Exception as e:
         print(e)
         raise HTTPException(status_code=500, detail="Internal Server Error")
+
+
 
 @app.get("/getrecruitermongo/{email}/{item_id}")
 async def get_user_mongo(email: str, item_id: str):
@@ -410,6 +468,7 @@ async def search_mongo(phrase: str):
     except Exception as e:
             print(e)
             raise HTTPException(status_code=500, detail="Internal Server Error")
+
 
 @app.get("/searchrecruiterdetailsmongo/{phrase}",response_description="Stringified List of keywords seperated by comma")
 async def search_mongo(phrase: str):
@@ -454,9 +513,9 @@ async def upload_image( item: Uploader,file: UploadFile = File(...)):
         print(e)
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
-# portx = os.environ.get('PORT', 8000)
-# if __name__ == "__main__":
-#     uvicorn.run(app, host="0.0.0.0", port = '0.0.0.0', reload=True)
+#portx = os.environ.get('PORT', 8000)
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port = 8000)
 
 
 
