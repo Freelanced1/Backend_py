@@ -32,11 +32,11 @@ from fastapi.security import (
     SecurityScopes,
 )
 #
-sql_user = "freelanced"
-sql_host = "freelanced1.postgres.database.azure.com"
-sql_pass = "Abc12345"
-sql_db = "freelanced"
-mongodb_url = "mongodb://freelancedmongo:KfvFJ40xUPSPbMsUlhKZC9s3LC7CYZ9T8Cl7gCsTenFulvbTAmDTlVidmMn4JOTXVqipu75qILasACDbYBdzdQ==@freelancedmongo.mongo.cosmos.azure.com:10255/?ssl=true&replicaSet=globaldb&retrywrites=false&maxIdleTimeMS=120000&appName=@freelancedmongo@"
+sql_user = "freelance"
+sql_host = "freelancesql.postgres.database.azure.com"
+sql_pass = "Rogers@123"
+sql_db = "freelancesql"
+mongodb_url = "mongodb://freelancemongo:U75X15umQ4omZWGNyDTfCPmCOT0jcgS9kQBkthKrFAcsPge27UV1VuY6tV5FfP35HgRjmJ8Z9K7cACDbMRjtXw==@freelancemongo.mongo.cosmos.azure.com:10255/?ssl=true&replicaSet=globaldb&retrywrites=false&maxIdleTimeMS=120000&appName=@freelancemongo@"
 
 # Google OAuth2 credentials
 GOOGLE_CLIENT_ID = "825776228723-acjhna5u0tf3730fj8eam3vbk3irr23u.apps.googleusercontent.com"
