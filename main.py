@@ -33,15 +33,15 @@ from fastapi.security import (
 )
 #
 sql_user = "freelance"
-sql_host = "freelancesql.postgres.database.azure.com"
+sql_host = "postgresfreelance.postgres.database.azure.com"
 sql_pass = "Rogers@123"
-sql_db = "freelancesql"
-mongodb_url = "mongodb://freelancemongo:U75X15umQ4omZWGNyDTfCPmCOT0jcgS9kQBkthKrFAcsPge27UV1VuY6tV5FfP35HgRjmJ8Z9K7cACDbMRjtXw==@freelancemongo.mongo.cosmos.azure.com:10255/?ssl=true&replicaSet=globaldb&retrywrites=false&maxIdleTimeMS=120000&appName=@freelancemongo@"
+sql_db = "postgresfreelance"
+mongodb_url = "mongodb://freelancedapi:CjViwnSIvg8Ri724f9CP05mkaeCLDoLK4ynu5UxtNeYMxwxjueNzqddyNdIUfp7YMFCgPtvWErsbACDb9vRtnA==@freelancedapi.mongo.cosmos.azure.com:10255/?ssl=true&replicaSet=globaldb&retrywrites=false&maxIdleTimeMS=120000&appName=@freelancedapi@"
 
 # Google OAuth2 credentials
 GOOGLE_CLIENT_ID = "825776228723-acjhna5u0tf3730fj8eam3vbk3irr23u.apps.googleusercontent.com"
 GOOGLE_CLIENT_SECRET = "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"
-connect_str = "DefaultEndpointsProtocol=https;AccountName=freelancedblob;AccountKey=yPM6hyAFgkBdKlojas28omizW+qOXmMc/goQkXCTec1hvplFlwlyKEwByiyL5cqhel6fcJUu/IfL+AStKBid1w==;EndpointSuffix=core.windows.net"
+connect_str = "DefaultEndpointsProtocol=https;AccountName=freelancedblob;AccountKey=/mBfa3fVMqhs1A185qC/pcJdhEwX6KqJ5kV0nVhYzgYY8NqRZu/0qCfVUj6izMZE1DoVIUAf3+9Z+AStqdl8qg==;EndpointSuffix=core.windows.net"
 
 
 GOOGLE_DISCOVERY_URL = "https://accounts.google.com/.well-known/openid-configuration"
@@ -511,9 +511,9 @@ async def upload_image( item: Uploader,file: UploadFile = File(...)):
         print(e)
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
-#portx = os.environ.get('PORT', 8000)
+# #portx = os.environ.get('PORT', 8000)
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port = 8000)
+    uvicorn.run(app, host="0.0.0.0", port = 8000, log_level='info')
 
 
 
