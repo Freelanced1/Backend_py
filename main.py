@@ -480,6 +480,32 @@ async def search_mongo(phrase: str):
             print(e)
             raise HTTPException(status_code=500, detail="Internal Server Error")
 
+#FILTERING
+@app.get("/filteruserdetailsmongo/",response_description="Queried List of keywords seperated by comma")
+async def search(
+
+        skills: list = Query(None),
+        experience: int = Query(None),
+        pay: int = Query(None)
+):
+    collection = db1
+    # create filter dictionary based on query parameters
+    filter_dict = {}
+    if skills:
+        filter_dict['skills'] = {'$all': skills.split(',')}
+    if experience:
+        filter_dict['experience'] = {'$gte': experience}
+    if pay:
+        filter_dict['pay'] = {'$lte': pay}
+
+    # search for freelancers in MongoDB with matching filter conditions
+    result = collection.find(filter_dict).sort([('score', -1)]).limit(10)
+
+    # return result as JSON string
+    return json.dumps(result)
+
+# @app.get("/filterrecruiterdetailsmongo/",response_description="Queried List of keywords seperated by comma")
+
 
 def check_existance(containername):
     container_client = blob_service_client.get_container_client(containername)
