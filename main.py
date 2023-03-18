@@ -21,7 +21,7 @@ import socketio
 
 
 #
-sql_user = "freelance"
+sql_user = "freelance@postgresfreelance"
 sql_host = "postgresfreelance.postgres.database.azure.com"
 sql_pass = "Rogers@123"
 sql_db = "postgresfreelance"
