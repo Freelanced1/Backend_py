@@ -17,7 +17,7 @@ from google.oauth2 import id_token
 from pydantic import BaseModel
 from sse_starlette.sse import EventSourceResponse
 from fastapi_socketio import SocketManager
-
+import socketio
 
 
 #
@@ -74,6 +74,7 @@ app.add_middleware(
 )
 
 socket_manager = SocketManager(app=app,cors_allowed_origins="*", mount_location='/ws')
+# sio = socketio.Client()
 
 
 try:
@@ -533,19 +534,19 @@ async def upload_image( item: Uploader,file: UploadFile = File(...)):
 
 #SOCKET IO
 
-@app.on("connect")
+@socket_manager.on("connect")
 async def connect(sid, environ):
     print(f"New client connected: {sid}")
 
-@app.on("disconnect")
+@socket_manager.on("disconnect")
 async def disconnect(sid):
     print(f"Client disconnected: {sid}")
 
-@app.on("message")
+@socket_manager.on("message")
 async def message(sid, data):
     print(f"Message received from {sid}: {data}")
 
-@app.on("chat_message")
+@socket_manager.on("chat_message")
 async def chat_message(sid, data):
     print(f"Received message from {sid}: {data}")
     # Get the recipient's sid from the message data
@@ -553,22 +554,22 @@ async def chat_message(sid, data):
     # Send the message to the recipient
     await socket_manager.emit("chat_message", data, room=recipient_sid)
 
-@app.on("join_room")
+@socket_manager.on("join_room")
 async def join_room(sid, data):
     print(f"Client {sid} joined room {data['room']}")
     await socket_manager.enter_room(sid, data["room"])
 
-@app.on("leave_room")
+@socket_manager.on("leave_room")
 async def leave_room(sid, data):
     print(f"Client {sid} left room {data['room']}")
     await socket_manager.leave_room(sid, data["room"])
 
-@app.on("get_clients")
+@socket_manager.on("get_clients")
 async def get_clients(sid):
     clients = await socket_manager.get_clients()
     print(f"Current clients: {clients}")
 
-@app.on("get_rooms")
+@socket_manager.on("get_rooms")
 async def get_rooms(sid):
     rooms = await socket_manager.get_rooms()
     print(f"Current rooms: {rooms}")
