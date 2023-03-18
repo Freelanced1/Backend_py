@@ -1,36 +1,25 @@
 import json
-import logging
-import os
 import uuid
-import psycopg2
-import pymongo
-from fastapi import FastAPI, Request, Query, BackgroundTasks
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-import uvicorn
-
-from fastapi import FastAPI, Body, HTTPException, status
-from fastapi.responses import Response, JSONResponse
-from fastapi.encoders import jsonable_encoder
-from pydantic import BaseModel, Field, EmailStr
-from bson import ObjectId
-from typing import Optional, List
-import motor.motor_asyncio
-from fastapi import FastAPI, Depends
-from fastapi.security import OAuth2AuthorizationCodeBearer
-from fastapi.responses import HTMLResponse, RedirectResponse
-from google.oauth2 import id_token
-from google.auth.transport import requests as google_requests
-import requests
-from fastapi import FastAPI, File, UploadFile
-from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient
+from typing import Optional
 import certifi
+import motor.motor_asyncio
+import psycopg2
+import requests
+import uvicorn
+from azure.storage.blob import BlobServiceClient
+from bson import ObjectId
+from fastapi import Depends, FastAPI, File, UploadFile, HTTPException, Query, BackgroundTasks
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.security import OAuth2AuthorizationCodeBearer
+from google.auth.transport import requests as google_requests
+from google.oauth2 import id_token
+from pydantic import BaseModel
+from sse_starlette.sse import EventSourceResponse
+from fastapi_socketio import SocketManager
 
-from fastapi.security import (
-    OAuth2PasswordBearer,
-    OAuth2PasswordRequestForm,
-    SecurityScopes,
-)
+
+
 #
 sql_user = "freelance"
 sql_host = "postgresfreelance.postgres.database.azure.com"
@@ -83,6 +72,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+socket_manager = SocketManager(app=app,cors_allowed_origins="*", mount_location='/ws')
+
 
 try:
     connection = psycopg2.connect(user=sql_user,
@@ -231,6 +223,7 @@ async def user_exists(email: str):
             raise HTTPException(status_code=404, detail="Item not found")
         else:
             return {"message": "User exists"}
+
     except (Exception, psycopg2.Error) as error:
         print("Error while connecting to PostgreSQL", error)
         raise HTTPException(status_code=500, detail="Internal Server Error")
@@ -536,6 +529,51 @@ async def upload_image( item: Uploader,file: UploadFile = File(...)):
     except Exception as e:
         print(e)
         raise HTTPException(status_code=500, detail="Internal Server Error")
+
+
+#SOCKET IO
+
+@app.on("connect")
+async def connect(sid, environ):
+    print(f"New client connected: {sid}")
+
+@app.on("disconnect")
+async def disconnect(sid):
+    print(f"Client disconnected: {sid}")
+
+@app.on("message")
+async def message(sid, data):
+    print(f"Message received from {sid}: {data}")
+
+@app.on("chat_message")
+async def chat_message(sid, data):
+    print(f"Received message from {sid}: {data}")
+    # Get the recipient's sid from the message data
+    recipient_sid = data["recipient_sid"]
+    # Send the message to the recipient
+    await socket_manager.emit("chat_message", data, room=recipient_sid)
+
+@app.on("join_room")
+async def join_room(sid, data):
+    print(f"Client {sid} joined room {data['room']}")
+    await socket_manager.enter_room(sid, data["room"])
+
+@app.on("leave_room")
+async def leave_room(sid, data):
+    print(f"Client {sid} left room {data['room']}")
+    await socket_manager.leave_room(sid, data["room"])
+
+@app.on("get_clients")
+async def get_clients(sid):
+    clients = await socket_manager.get_clients()
+    print(f"Current clients: {clients}")
+
+@app.on("get_rooms")
+async def get_rooms(sid):
+    rooms = await socket_manager.get_rooms()
+    print(f"Current rooms: {rooms}")
+
+
 
 # #portx = os.environ.get('PORT', 8000)
 if __name__ == "__main__":
