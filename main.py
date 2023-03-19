@@ -20,6 +20,7 @@ from fastapi_socketio import SocketManager
 import socketio
 
 
+
 #
 sql_user = "freelance@postgresfreelance"
 sql_host = "postgresfreelance.postgres.database.azure.com"
@@ -40,7 +41,6 @@ oauth2_scheme = OAuth2AuthorizationCodeBearer(
     tokenUrl="https://oauth2.googleapis.com/token",
     scopes={'openid': 'OpenID Connect', 'email': 'Access to your email address', 'profile': 'Access to your basic profile'},
 )
-
 
 
 class PyObjectId(ObjectId):
@@ -83,6 +83,7 @@ try:
                                   host=sql_host,
                                   port="5432",
                                   database="postgres")
+    print("connection successful")
     cursor = connection.cursor()
 except (Exception, psycopg2.Error) as error:
     print("Error while connecting to PostgreSQL", error)
@@ -232,7 +233,7 @@ async def user_exists(email: str):
 
 
 @app.post("/newuser")
-async def new_user(item: Item, background_tasks: BackgroundTasks):
+async def new_user(item: Item):
     try:
         print("entered")
         #Create User ID#
@@ -464,7 +465,7 @@ async def search_mongo(phrase: str):
         for ix in keywords:
 
             result = await db1.find({"$text": {"$search": str(ix).lower(), "$caseSensitive": False, "$diacriticSensitive": False}})
-            return result
+            return json.dumps(result)
     except Exception as e:
             print(e)
             raise HTTPException(status_code=500, detail="Internal Server Error")
@@ -477,36 +478,82 @@ async def search_mongo(phrase: str):
         for ix in keywords:
 
             result = await db2.find({"$text": {"$search": str(ix).lower(), "$caseSensitive": False, "$diacriticSensitive": False}})
-            return result
+            return json.dumps(result)
     except Exception as e:
             print(e)
             raise HTTPException(status_code=500, detail="Internal Server Error")
 
 #FILTERING
 @app.get("/filteruserdetailsmongo/",response_description="Queried List of keywords seperated by comma")
-async def search(
+async def searchfreelancer(
 
-        skills: list = Query(None),
-        experience: int = Query(None),
-        pay: int = Query(None)
+        skills: Optional[list] = Query(None),
+        experience: Optional[int] = Query(None),
+        pay: Optional[int] = Query(None),
+        ratings: Optional[int] = Query(None),
+        category: Optional[list] = Query(None),
 ):
-    collection = db1
-    # create filter dictionary based on query parameters
-    filter_dict = {}
-    if skills:
-        filter_dict['skills'] = {'$all': skills.split(',')}
-    if experience:
-        filter_dict['experience'] = {'$gte': experience}
-    if pay:
-        filter_dict['pay'] = {'$lte': pay}
+    try:
+        collection = db1
+        # create filter dictionary based on query parameters
+        filter_dict = {}
+        if skills:
+            filter_dict['skills'] = {'$all': skills.split(',')}
+        if experience:
+            filter_dict['experience'] = {'$gte': experience}
+        if pay:
+            filter_dict['pay'] = {'$lte': pay}
+        if ratings:
+            filter_dict['ratings'] = {'$gte': ratings}
+        if category:
+            filter_dict['category'] = {'$all':category.split('')}
 
-    # search for freelancers in MongoDB with matching filter conditions
-    result = collection.find(filter_dict).sort([('score', -1)]).limit(10)
+        # search for freelancers in MongoDB with matching filter conditions
+        result = collection.find(filter_dict).sort([('score', -1)]).limit(10)
 
     # return result as JSON string
-    return json.dumps(result)
+        return json.dumps(result)
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=500, detail="Internal Server Error")
 
 # @app.get("/filterrecruiterdetailsmongo/",response_description="Queried List of keywords seperated by comma")
+@app.get("/filterbuyerdetailsmongo/",response_description="Queried List of keywords seperated by comma")
+async def searchproject(
+        category:Optional[list] = Query(None),
+        skills: Optional[list] = Query(None),
+        min_budget: Optional[int] = Query(None),
+        ratings: Optional[int] = Query(None),
+        experience: Optional[int] = Query(None),
+        delivery_time: Optional[int] = Query(None),
+
+):
+    try:
+        collection = db2
+        # create filter dictionary based on query parameters
+        filter_dict = {}
+        if category:
+            filter_dict['category'] = {'$all':category.split(',')}
+        if skills:
+            filter_dict['skills'] = {'$all': skills.split(',')}
+        if min_budget:
+            filter_dict['budget'] = {'$gte': min_budget}
+        if ratings:
+            filter_dict['ratings'] = {'$gte': ratings}
+        if experience:
+            filter_dict['experience'] = {'$lte': experience}
+        if delivery_time:
+            filter_dict['delivery_time'] = {'$gte': delivery_time}
+
+        # search for freelancers in MongoDB with matching filter conditions
+        result = collection.find(filter_dict).sort([('score', -1)]).limit(10)
+        return json.dumps(result)
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+
+
+
 
 
 def check_existance(containername):
@@ -581,6 +628,7 @@ async def get_clients(sid):
 async def get_rooms(sid):
     rooms = await socket_manager.get_rooms()
     print(f"Current rooms: {rooms}")
+
 
 
 
