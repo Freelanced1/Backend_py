@@ -234,14 +234,17 @@ async def user_exists(email: str):
 @app.post("/newuser")
 async def new_user(item: Item, background_tasks: BackgroundTasks):
     try:
+        print("entered")
         #Create User ID#
         cursor.execute("INSERT INTO public.user_login_1 (email, firstname, lastname) VALUES (%s, %s, %s)", (item.email, item.firstname, item.lastname,))
+        print("done")
         connection.commit()
         count = cursor.rowcount
         print(count, "Record inserted successfully into users table")
         return {"message": "User added successfully"}
     except (Exception, psycopg2.Error) as error:
         return{"message":error}
+
 
 # Get user Info from the database
 @app.post("/newrecruiter")
@@ -339,39 +342,61 @@ async def new_user_mongo(item: User):
         raise HTTPException(status_code=500, detail="Internal Server Error, User not added")
 
 @app.put("/updateusermongo/")  #User Update
-async def update_user_mongo(item: User):
+async def update_user_mongo(item: User, objid:str =Query(...)):
     try:
         collection_name = str(item.email)
         itemx = item.dict()
-        itemx["_id"] = str(ObjectId())
+        itemx["_id"] = objid
+
         collection = db1[collection_name]
-        await collection.update_one(itemx)
-        # save id to postgres also for future use
-        # write to postgres
-        cursor.execute("UPDATE public.user_login_1 SET id = %s WHERE email = %s", (str(itemx["_id"]), str(itemx["email"]),))
-        connection.commit()
-        return {"message": "Item updated successfully & User updated successfully", "id": itemx["_id"]}
+
+        await collection.update_one({"_id" : objid}, {'$set' : itemx})
+        return {"message": "User updated successfully", "id": itemx["_id"]}
     except Exception as e:
         print(e)
         raise HTTPException(status_code=500, detail="Internal Server Error, User not added")
 
 
-@app.put("/recruiter_mongo/")   #Recruiter Mongo
-async def update_user_mongo(item: User):
+@app.put("/updateRecruitermongo/")  #Recruiter Update
+async def update_recruiter_mongo(item: Recruiter, objid:str =Query(...)):
     try:
         collection_name = str(item.email)
         itemx = item.dict()
-        itemx["_id"] = str(ObjectId())
-        collection = db1[collection_name]
-        await collection.update_one(itemx)
-        # save id to postgres also for future use
-        # write to postgres
-        cursor.execute("UPDATE public.business_login SET id = %s WHERE email = %s", (str(itemx["_id"]), str(itemx["email"]),))
-        connection.commit()
-        return {"message": "Item updated successfully & Business updated successfully", "id": itemx["_id"]}
+        itemx["_id"] = objid
+
+        collection = db2[collection_name]
+
+        await collection.update_one({"_id" : objid}, {'$set' : itemx})
+        return {"message": "Recruiter updated successfully", "id": itemx["_id"]}
     except Exception as e:
         print(e)
-        raise HTTPException(status_code=500, detail="Internal Server Error, Business not updated")
+        raise HTTPException(status_code=500, detail="Internal Server Error, User not added")
+
+
+@app.delete("/DeleteRecruitermongo/")  #Recruiter delete
+async def delete_recruiter_mongo(email:str =Query(...)):
+    try:
+        collection_name = email
+        collection = db2[collection_name]
+        collection.drop()
+        #await collection.update_one({"_id" : objid}, {'$set' : itemx})
+        return {"message": "Recruiter Deleted successfully"}
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=500, detail="Internal Server Error, Recruiter not deleted")
+
+
+@app.delete("/DeleteUsermongo/")  #User delete mongo
+async def delete_recruiter_mongo(email:str =Query(...)):
+    try:
+        collection_name = email
+        collection = db1[collection_name]
+        collection.drop()
+        #await collection.update_one({"_id" : objid}, {'$set' : itemx})
+        return {"message": "User Deleted successfully"}
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=500, detail="Internal Server Error, User not deleted")
 
 
 @app.post("/newrecruitermongo/")
@@ -389,23 +414,6 @@ async def new_recruiter_mongo(item: Recruiter):
         cursor.execute("UPDATE public.business_login SET id = %s WHERE email = %s", (str(itemx["_id"]), str(itemx["email"]),))
         connection.commit()
 
-        return {"message": "Item created successfully & User updated successfully","id":itemx["_id"]}
-    except Exception as e:
-        print(e)
-        raise HTTPException(status_code=500, detail="Internal Server Error, User not added")
-
-@app.delete("/deleterecruitermongo/")   #DELETE PENDING
-async def new_recruiter_mongo( item: Recruiter):
-    try:
-        collection_name = str(item.email)
-        itemx = item.dict()
-        itemx["_id"] = str(ObjectId())
-        collection = db2[collection_name]
-        await collection.delete_one(itemx)
-        #save id to postgres also for future use
-        #write to postgres
-        cursor.execute("UPDATE public.business_login SET id = %s WHERE email = %s", (str(itemx["_id"]), str(itemx["email"]),))
-        connection.commit()
         return {"message": "Item created successfully & User updated successfully","id":itemx["_id"]}
     except Exception as e:
         print(e)
