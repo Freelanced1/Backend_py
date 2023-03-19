@@ -268,19 +268,52 @@ async def get_user(email: str):
         if item is None:
             raise HTTPException(status_code=404, detail="Item not found")
         else:
-            return {"email": item[2], "Firstname": item[0], "Lastname": item[1]}
+            print(item)
+            return {"email": item[0], "Firstname": item[1], "Lastname": item[2],"id":item[3]}
     except (Exception, psycopg2.Error) as error:
         print("Error while connecting to PostgreSQL", error)
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
-#@app.delete("/deleteuser/{email}")  #DELETE USER
-async def delete_user(email: str):
+@app.delete("/deleteuser/{email}")  #DELETE USER
+async def delete_user(email: str ):
     try:
-        cursor.execute("DELETE FROM public.user_login_1 WHERE email = %s", (email))
-        raise "Item Deleted"
-    except (Exception, psycopg2.Error) as error:
+        cursor.execute("DELETE FROM public.user_login_1 WHERE email = %s", (email,))
+        connection.commit()
+        return ("Item Deleted")
+    except psycopg2.Error as error:
         print("Error while connecting to PostgreSQL", error)
         raise HTTPException(status_code=500, detail="Internal Server Error")
+
+@app.delete("/deleteRecruiter/{email}")  #DELETE Recruiter
+async def delete_recuiter(email: str ):
+    try:
+        cursor.execute("DELETE FROM public.business_login WHERE email = %s", (email,))
+        connection.commit()
+        return ("Item Deleted")
+    except psycopg2.Error as error:
+        print("Error while connecting to PostgreSQL", error)
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+
+@app.put("/UpdateUser/{email}")  #Update User in Postgres
+async def update_user(item : Item ):
+    try:
+        cursor.execute("UPDATE public.user_login_1 SET firstname = %s, lastname = %s WHERE email = %s", (str(item.firstname),str(item.lastname), str(item.email),))
+        connection.commit()
+        return ("Item Updated")
+    except psycopg2.Error as error:
+        print("Error while connecting to PostgreSQL", error)
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+
+@app.put("/UpdateRecruiter/{email}")  #Update Recruiter in Postgres
+async def update_user(item : Item ):
+    try:
+        cursor.execute("UPDATE public.business_login SET firstname = %s, lastname = %s WHERE email = %s", (str(item.firstname),str(item.lastname), str(item.email),))
+        connection.commit()
+        return ("Item Updated")
+    except psycopg2.Error as error:
+        print("Error while connecting to PostgreSQL", error)
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+
 
 # Update user Info in the database
 @app.get("/getbusiness/{email}")
@@ -291,7 +324,7 @@ async def get_buisness(email: str):
         if item is None:
             raise HTTPException(status_code=404, detail="Item not found")
         else:
-            return {"email": item[2], "Firstname": item[0], "Lastname": item[1]}
+            return {"email": item[0], "Firstname": item[1], "Lastname": item[2],"id":item[3]}
     except (Exception, psycopg2.Error) as error:
         print("Error while connecting to PostgreSQL", error)
         raise HTTPException(status_code=500, detail="Internal Server Error")
