@@ -447,7 +447,8 @@ async def new_recruiter_mongo(item: Recruiter):
         await db2.create_collection(collection_name)
         collection = db2[collection_name]
         await collection.insert_one(itemx)
-        await collection.create_index({"$**": "text"})
+
+
         #save id to postgres also for future use
 
         #write to postgres
@@ -527,10 +528,10 @@ async def search_mongo(phrase: str):
     keywords = list(phrase.split(","))
     result = {"data": []}
     try:
-        for ix in keywords:
-            collections = db2.list_collection_names()
-            for collection in collections:
-                res = db1[collection].find({"project_area_details": str(ix).lower()})
+        collections = await db2.list_collection_names()
+        for collection in collections:
+            for ix in keywords:
+                res = db2[collection].find({"project_area_details": str(ix).lower()})
                 while await res.fetch_next:
                     result["data"].append(res.next_object())
                 print(res)
@@ -546,7 +547,7 @@ async def search_mongo(phrase: str):
 @app.get("/filteruserdetailsmongo/",response_description="Queried List of keywords seperated by comma")
 async def searchfreelancer(
 
-        skills: Optional[list] = Query(None),
+        skills: Optional[str] = Query(None),
         experience: Optional[int] = Query(None),
         pay: Optional[int] = Query(None),
         ratings: Optional[int] = Query(None),
@@ -568,12 +569,16 @@ async def searchfreelancer(
             filter_dict['category'] = {'$all':category}
 
         # search for freelancers in MongoDB with matching filter conditions
-        collections = db1.list_collection_names()
+        collections = await db1.list_collection_names()
         result = {"data": []}
         for collection in collections:
-            res = db1[collection].find(filter_dict).sort([('score', -1)]).limit(10)
+            # sort by score in descending order
+            res = db1[collection].find(filter_dict)
             while await res.fetch_next:
+                if len(result["data"]) < 10:
                     result["data"].append(res.next_object())
+                else:
+                    break
 
 
 
@@ -588,7 +593,7 @@ async def searchfreelancer(
 @app.get("/filterbuyerdetailsmongo/",response_description="Queried List of keywords seperated by comma")
 async def searchproject(
         category:Optional[str] = Query(None),
-        skills: Optional[list] = Query(None),
+        skills: Optional[str] = Query(None),
         min_budget: Optional[int] = Query(None),
         ratings: Optional[int] = Query(None),
         experience: Optional[int] = Query(None),
@@ -613,12 +618,15 @@ async def searchproject(
             filter_dict['delivery_time'] = {'$gte': delivery_time}
 
         # search for freelancers in MongoDB with matching filter conditions
-        collections = db2.list_collection_names()
+        collections = await db2.list_collection_names()
         result = {"data": []}
         for collection in collections:
-            res = db2[collection].find(filter_dict).sort([('score', -1)]).limit(10)
+            res = db2[collection].find(filter_dict)
             while await res.fetch_next:
+                if len(result["data"]) < 10:
                     result["data"].append(res.next_object())
+                else:
+                    break
         return result
     except Exception as e:
         print(e)
