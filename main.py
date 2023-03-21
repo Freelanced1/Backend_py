@@ -18,7 +18,7 @@ from pydantic import BaseModel
 from sse_starlette.sse import EventSourceResponse
 from fastapi_socketio import SocketManager
 import socketio
-
+import pymongo
 
 
 #
@@ -362,8 +362,11 @@ async def new_user_mongo(item: User):
         itemx["_id"] = str(ObjectId())
         await db1.create_collection(collection_name)
         collection = db1[collection_name]
+
         await collection.insert_one(itemx)
         # save id to postgres also for future use
+        #create index for text search
+        # await collection.create_index({"skills", 'text'})
 
         # write to postgres
         cursor.execute("UPDATE public.user_login_1 SET id = %s WHERE email = %s", (str(itemx["_id"]), str(itemx["email"]),))
@@ -385,6 +388,7 @@ async def update_user_mongo(item: User, objid:str =Query(...)):
         collection = db1[collection_name]
 
         await collection.update_one({"_id" : objid}, {'$set' : itemx})
+        # await collection.create_index({"$**": "text"})
         return {"message": "User updated successfully", "id": itemx["_id"]}
     except Exception as e:
         print(e)
@@ -401,6 +405,7 @@ async def update_recruiter_mongo(item: Recruiter, objid:str =Query(...)):
         collection = db2[collection_name]
 
         await collection.update_one({"_id" : objid}, {'$set' : itemx})
+        # await collection.create_index({"skills": "text"})
         return {"message": "Recruiter updated successfully", "id": itemx["_id"]}
     except Exception as e:
         print(e)
@@ -442,6 +447,7 @@ async def new_recruiter_mongo(item: Recruiter):
         await db2.create_collection(collection_name)
         collection = db2[collection_name]
         await collection.insert_one(itemx)
+        await collection.create_index({"$**": "text"})
         #save id to postgres also for future use
 
         #write to postgres
@@ -494,11 +500,23 @@ async def get_user_mongo(email: str, item_id: str):
 @app.get("/searchuserdetailsmongo/{phrase}",response_description="Stringified List of keywords seperated by comma")
 async def search_mongo(phrase: str):
     keywords = list(phrase.split(","))
+    print(keywords)
+    result = {"data": []}
     try:
-        for ix in keywords:
 
-            result = await db1.find({"$text": {"$search": str(ix).lower(), "$caseSensitive": False, "$diacriticSensitive": False}})
-            return json.dumps(result)
+
+        collections = await db1.list_collection_names()
+        print(collections)
+        print("1")
+        for collection in collections:
+            print(type(collection))
+            for ix in keywords:
+                res = db1[collection].find({"skills": str(ix).lower()})
+                while await res.fetch_next:
+                    result["data"].append(res.next_object())
+                print(res)
+
+        return result
     except Exception as e:
             print(e)
             raise HTTPException(status_code=500, detail="Internal Server Error")
@@ -507,11 +525,19 @@ async def search_mongo(phrase: str):
 @app.get("/searchrecruiterdetailsmongo/{phrase}",response_description="Stringified List of keywords seperated by comma")
 async def search_mongo(phrase: str):
     keywords = list(phrase.split(","))
+    result = {"data": []}
     try:
         for ix in keywords:
+            collections = db2.list_collection_names()
+            for collection in collections:
+                res = db1[collection].find({"project_area_details": str(ix).lower()})
+                while await res.fetch_next:
+                    result["data"].append(res.next_object())
+                print(res)
 
-            result = await db2.find({"$text": {"$search": str(ix).lower(), "$caseSensitive": False, "$diacriticSensitive": False}})
-            return json.dumps(result)
+
+
+        return result
     except Exception as e:
             print(e)
             raise HTTPException(status_code=500, detail="Internal Server Error")
@@ -524,7 +550,7 @@ async def searchfreelancer(
         experience: Optional[int] = Query(None),
         pay: Optional[int] = Query(None),
         ratings: Optional[int] = Query(None),
-        category: Optional[list] = Query(None),
+        category: Optional[str] = Query(None),
 ):
     try:
         collection = db1
@@ -539,13 +565,21 @@ async def searchfreelancer(
         if ratings:
             filter_dict['ratings'] = {'$gte': ratings}
         if category:
-            filter_dict['category'] = {'$all':category.split('')}
+            filter_dict['category'] = {'$all':category}
 
         # search for freelancers in MongoDB with matching filter conditions
-        result = collection.find(filter_dict).sort([('score', -1)]).limit(10)
+        collections = db1.list_collection_names()
+        result = {"data": []}
+        for collection in collections:
+            res = db1[collection].find(filter_dict).sort([('score', -1)]).limit(10)
+            while await res.fetch_next:
+                    result["data"].append(res.next_object())
+
+
+
 
     # return result as JSON string
-        return json.dumps(result)
+        return result
     except Exception as e:
         print(e)
         raise HTTPException(status_code=500, detail="Internal Server Error")
@@ -553,7 +587,7 @@ async def searchfreelancer(
 # @app.get("/filterrecruiterdetailsmongo/",response_description="Queried List of keywords seperated by comma")
 @app.get("/filterbuyerdetailsmongo/",response_description="Queried List of keywords seperated by comma")
 async def searchproject(
-        category:Optional[list] = Query(None),
+        category:Optional[str] = Query(None),
         skills: Optional[list] = Query(None),
         min_budget: Optional[int] = Query(None),
         ratings: Optional[int] = Query(None),
@@ -566,7 +600,7 @@ async def searchproject(
         # create filter dictionary based on query parameters
         filter_dict = {}
         if category:
-            filter_dict['category'] = {'$all':category.split(',')}
+            filter_dict['category'] = {'$all':category}
         if skills:
             filter_dict['skills'] = {'$all': skills.split(',')}
         if min_budget:
@@ -579,8 +613,13 @@ async def searchproject(
             filter_dict['delivery_time'] = {'$gte': delivery_time}
 
         # search for freelancers in MongoDB with matching filter conditions
-        result = collection.find(filter_dict).sort([('score', -1)]).limit(10)
-        return json.dumps(result)
+        collections = db2.list_collection_names()
+        result = {"data": []}
+        for collection in collections:
+            res = db2[collection].find(filter_dict).sort([('score', -1)]).limit(10)
+            while await res.fetch_next:
+                    result["data"].append(res.next_object())
+        return result
     except Exception as e:
         print(e)
         raise HTTPException(status_code=500, detail="Internal Server Error")
