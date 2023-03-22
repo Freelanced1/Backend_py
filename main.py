@@ -415,6 +415,29 @@ async def update_recruiter(email: str, item: Item):
 
 #MONGODB
 
+#all data from mongo db2
+@app.get("/allProject/")
+async def allProject():
+    try:
+        collections = await db1.list_collection_names()
+        for ix in collections:
+            print(type(ix))
+            collection = db2[ix]
+            cursor = collection.find({})
+            result = {"data": []}
+            print(cursor)
+            while await cursor.fetch_next:
+                res = cursor.next_object()
+                print(res)
+                result["data"].append(res)
+
+        return result
+
+    except (Exception, psycopg2.Error) as error:
+        print("Error while connecting to MONGO", error)
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+
+
 # Add a new user to the database
 @app.post("/newusermongo/")
 async def new_user_mongo(item: User):
@@ -759,7 +782,6 @@ async def searchproject(
         # cursor.execute("INSERT INTO public.logs (date, log) VALUES (%s, %s)", (now, "Error",))
         # connection.commit()
         raise HTTPException(status_code=500, detail="Internal Server Error")
-
 
 
 
