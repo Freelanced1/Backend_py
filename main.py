@@ -206,10 +206,10 @@ def callback(code: str, error: str = None):
         # id_info contains the user's information, can be used to check if user exist in database
         # User is authenticated, do something with id_info
         # print(id_info)
-        return (json.dumps(id_info)) #id_info is a dictionary of all the user's info
+        return {"token":access_token,"payload":json.dumps(id_info)} #id_info is a dictionary of all the user's info
 
 
-@app.get("/protected")
+@app.get("/protected-resource")
 def protected_route(token: str = Depends(oauth2_scheme)):
     # User is authenticated, do something with token
     return {"Hello": "Authenticated User!"}
