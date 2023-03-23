@@ -217,6 +217,25 @@ def protected_route(token: str = Depends(oauth2_scheme)):
 #USer existance check
 
 # POSTGRES
+@app.get("/personexists/{email}")
+async def person_exists(email: str):
+    try:
+        cursor.execute("SELECT * FROM public.user_login_1 WHERE email = %s", (email,))
+        item = cursor.fetchone()
+        if item is None:
+            cursor.execute("SELECT * FROM public.business_login WHERE email = %s", (email,))
+            item = cursor.fetchone()
+            if item is None:
+                raise HTTPException(status_code=404, detail="Item not found")
+            else:
+                return {"message": "Recruiter exists"}
+
+        else:
+            return {"message": "User exists"}
+
+    except (Exception, psycopg2.Error) as error:
+        print("Error while connecting to PostgreSQL", error)
+        raise HTTPException(status_code=500, detail="Internal Server Error")
 @app.get("/userexists/{email}")
 async def user_exists(email: str):
     try:
