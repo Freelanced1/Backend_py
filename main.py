@@ -17,8 +17,9 @@ from google.oauth2 import id_token
 from pydantic import BaseModel
 from sse_starlette.sse import EventSourceResponse
 from fastapi_socketio import SocketManager
+from datetime import date, datetime
 import socketio
-
+import pymongo
 
 
 #
@@ -205,10 +206,10 @@ def callback(code: str, error: str = None):
         # id_info contains the user's information, can be used to check if user exist in database
         # User is authenticated, do something with id_info
         # print(id_info)
-        return (json.dumps(id_info)) #id_info is a dictionary of all the user's info
+        return json.dumps({"token":access_token,"payload":id_info}) #id_info is a dictionary of all the user's info
 
 
-@app.get("/protected")
+@app.get("/protected-resource")
 def protected_route(token: str = Depends(oauth2_scheme)):
     # User is authenticated, do something with token
     return {"Hello": "Authenticated User!"}
@@ -242,8 +243,14 @@ async def new_user(item: Item):
         connection.commit()
         count = cursor.rowcount
         print(count, "Record inserted successfully into users table")
+        # now = datetime.today()
+        # cursor.execute("INSERT INTO public.logs (date, log) VALUES (%s, %s)",(now, "New User Inserted",))
+        # connection.commit()
         return {"message": "User added successfully"}
     except (Exception, psycopg2.Error) as error:
+        # now = datetime.today()
+        # cursor.execute("INSERT INTO public.logs (date, log) VALUES (%s, %s)", (now, "Error",))
+        # connection.commit()
         return{"message":error}
 
 
@@ -256,8 +263,14 @@ async def new_recruiter(item: Item, background_tasks: BackgroundTasks):
         connection.commit()
         count = cursor.rowcount
         print(count, "Record inserted successfully into users table")
+        # now = datetime.today()
+        # cursor.execute("INSERT INTO public.logs (date, log) VALUES (%s, %s)", (now, "New Recruiter Instered",))
+        # connection.commit()
         return {"message": "User added successfully"}
     except (Exception, psycopg2.Error) as error:
+        # now = datetime.today()
+        # cursor.execute("INSERT INTO public.logs (date, log) VALUES (%s, %s)", (now, "Error",))
+        # connection.commit()
         return{"message":error}
 
 @app.get("/getuser/{email}")
@@ -267,11 +280,18 @@ async def get_user(email: str):
         item = cursor.fetchone()
         if item is None:
             raise HTTPException(status_code=404, detail="Item not found")
+
         else:
             print(item)
+            # now = datetime.today()
+            # cursor.execute("INSERT INTO public.logs (date, log) VALUES (%s, %s)", (now, "User Fetched",))
+            # connection.commit()
             return {"email": item[0], "Firstname": item[1], "Lastname": item[2],"id":item[3]}
     except (Exception, psycopg2.Error) as error:
         print("Error while connecting to PostgreSQL", error)
+        # now = datetime.today()
+        # cursor.execute("INSERT INTO public.logs (date, log) VALUES (%s, %s)", (now, "Error",))
+        # connection.commit()
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
 @app.delete("/deleteuser/{email}")  #DELETE USER
@@ -279,9 +299,15 @@ async def delete_user(email: str ):
     try:
         cursor.execute("DELETE FROM public.user_login_1 WHERE email = %s", (email,))
         connection.commit()
+        # now = datetime.today()
+        # cursor.execute("INSERT INTO public.logs (date, log) VALUES (%s, %s)", (now, "User Deleted",))
+        # connection.commit()
         return ("Item Deleted")
     except psycopg2.Error as error:
         print("Error while connecting to PostgreSQL", error)
+        # now = datetime.today()
+        # cursor.execute("INSERT INTO public.logs (date, log) VALUES (%s, %s)", (now, "Error",))
+        # connection.commit()
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
 @app.delete("/deleteRecruiter/{email}")  #DELETE Recruiter
@@ -289,9 +315,15 @@ async def delete_recuiter(email: str ):
     try:
         cursor.execute("DELETE FROM public.business_login WHERE email = %s", (email,))
         connection.commit()
+        # now = datetime.today()
+        # cursor.execute("INSERT INTO public.logs (date, log) VALUES (%s, %s)", (now, "Recruiter Deleted",))
+        # connection.commit()
         return ("Item Deleted")
     except psycopg2.Error as error:
         print("Error while connecting to PostgreSQL", error)
+        # now = datetime.today()
+        # cursor.execute("INSERT INTO public.logs (date, log) VALUES (%s, %s)", (now, "Error",))
+        # connection.commit()
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
 @app.put("/UpdateUser/{email}")  #Update User in Postgres
@@ -299,9 +331,15 @@ async def update_user(item : Item ):
     try:
         cursor.execute("UPDATE public.user_login_1 SET firstname = %s, lastname = %s WHERE email = %s", (str(item.firstname),str(item.lastname), str(item.email),))
         connection.commit()
+        # now = datetime.today()
+        # cursor.execute("INSERT INTO public.logs (date, log) VALUES (%s, %s)", (now, "User Updated",))
+        # connection.commit()
         return ("Item Updated")
     except psycopg2.Error as error:
         print("Error while connecting to PostgreSQL", error)
+        # now = datetime.today()
+        # cursor.execute("INSERT INTO public.logs (date, log) VALUES (%s, %s)", (now, "Error",))
+        # connection.commit()
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
 @app.put("/UpdateRecruiter/{email}")  #Update Recruiter in Postgres
@@ -309,9 +347,15 @@ async def update_user(item : Item ):
     try:
         cursor.execute("UPDATE public.business_login SET firstname = %s, lastname = %s WHERE email = %s", (str(item.firstname),str(item.lastname), str(item.email),))
         connection.commit()
+        # now = datetime.today()
+        # cursor.execute("INSERT INTO public.logs (date, log) VALUES (%s, %s)", (now, "Recruiter updated",))
+        # connection.commit()
         return ("Item Updated")
     except psycopg2.Error as error:
         print("Error while connecting to PostgreSQL", error)
+        # now = datetime.today()
+        # cursor.execute("INSERT INTO public.logs (date, log) VALUES (%s, %s)", (now, "Error",))
+        # connection.commit()
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
 
@@ -324,9 +368,15 @@ async def get_buisness(email: str):
         if item is None:
             raise HTTPException(status_code=404, detail="Item not found")
         else:
+            # now = datetime.today()
+            # cursor.execute("INSERT INTO public.logs (date, log) VALUES (%s, %s)", (now, "Get Business",))
+            # connection.commit()
             return {"email": item[0], "Firstname": item[1], "Lastname": item[2],"id":item[3]}
     except (Exception, psycopg2.Error) as error:
         print("Error while connecting to PostgreSQL", error)
+        # now = datetime.today()
+        # cursor.execute("INSERT INTO public.logs (date, log) VALUES (%s, %s)", (now, "Error",))
+        # connection.commit()
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
 
@@ -335,23 +385,58 @@ async def update_user(email: str,item: Item):
     try:
         cursor.execute("UPDATE public.user_login_1 SET firstname = %s, lastname = %s WHERE email = %s", (item.firstname, item.lastname,email,))
         connection.commit()
+        # now = datetime.today()
+        # cursor.execute("INSERT INTO public.logs (date, log) VALUES (%s, %s)", (now, "User Updated",))
+        # connection.commit()
         return {"message": "User updated successfully"}
     except (Exception, psycopg2.Error) as error:
         print("Error while connecting to PostgreSQL", error)
+        # now = datetime.today()
+        # cursor.execute("INSERT INTO public.logs (date, log) VALUES (%s, %s)", (now, "Error",))
+        # connection.commit()
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
 @app.put("/updaterecriter/{email}")
-async def update_user(email: str, item: Item):
+async def update_recruiter(email: str, item: Item):
     try:
         cursor.execute("UPDATE public.business_login SET firstname = %s, lastname = %s WHERE email = %s", (item.firstname, item.lastname, email,))
         connection.commit()
+        # now = datetime.today()
+        # cursor.execute("INSERT INTO public.logs (date, log) VALUES (%s, %s)", (now, "Recruiter Updated",))
+        # connection.commit()
         return {"message": "User updated successfully"}
     except (Exception, psycopg2.Error) as error:
         print("Error while connecting to PostgreSQL", error)
+        # now = datetime.today()
+        # cursor.execute("INSERT INTO public.logs (date, log) VALUES (%s, %s)", (now, "Error",))
+        # connection.commit()
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
 
 #MONGODB
+
+#all data from mongo db2
+@app.get("/allProject/")
+async def allProject():
+    try:
+        collections = await db1.list_collection_names()
+        for ix in collections:
+            print(type(ix))
+            collection = db2[ix]
+            cursor = collection.find({})
+            result = {"data": []}
+            print(cursor)
+            while await cursor.fetch_next:
+                res = cursor.next_object()
+                print(res)
+                result["data"].append(res)
+
+        return result
+
+    except (Exception, psycopg2.Error) as error:
+        print("Error while connecting to MONGO", error)
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+
 
 # Add a new user to the database
 @app.post("/newusermongo/")
@@ -368,11 +453,16 @@ async def new_user_mongo(item: User):
         # write to postgres
         cursor.execute("UPDATE public.user_login_1 SET id = %s WHERE email = %s", (str(itemx["_id"]), str(itemx["email"]),))
         connection.commit()
-
+        # now = datetime.today()
+        # cursor.execute("INSERT INTO public.logs (date, log) VALUES (%s, %s)", (now, "New User Inserted Mongo",))
+        # connection.commit()
         return {"message": "Item created successfully & User updated successfully", "id": itemx["_id"]}
 
     except Exception as e:
         print(e)
+        # now = datetime.today()
+        # cursor.execute("INSERT INTO public.logs (date, log) VALUES (%s, %s)", (now, "Error",))
+        # connection.commit()
         raise HTTPException(status_code=500, detail="Internal Server Error, User not added")
 
 @app.put("/updateusermongo/")  #User Update
@@ -385,9 +475,15 @@ async def update_user_mongo(item: User, objid:str =Query(...)):
         collection = db1[collection_name]
 
         await collection.update_one({"_id" : objid}, {'$set' : itemx})
+        # now = datetime.today()
+        # cursor.execute("INSERT INTO public.logs (date, log) VALUES (%s, %s)", (now, "User Updated Mongo",))
+        # connection.commit()
         return {"message": "User updated successfully", "id": itemx["_id"]}
     except Exception as e:
         print(e)
+        # now = datetime.today()
+        # cursor.execute("INSERT INTO public.logs (date, log) VALUES (%s, %s)", (now, "Error",))
+        # connection.commit()
         raise HTTPException(status_code=500, detail="Internal Server Error, User not added")
 
 
@@ -402,8 +498,14 @@ async def update_recruiter_mongo(item: Recruiter, objid:str =Query(...)):
 
         await collection.update_one({"_id" : objid}, {'$set' : itemx})
         return {"message": "Recruiter updated successfully", "id": itemx["_id"]}
+        # now = datetime.today()
+        # cursor.execute("INSERT INTO public.logs (date, log) VALUES (%s, %s)", (now, "Updated Recruiter Mongo",))
+        # connection.commit()
     except Exception as e:
         print(e)
+        # now = datetime.today()
+        # cursor.execute("INSERT INTO public.logs (date, log) VALUES (%s, %s)", (now, "Error",))
+        # connection.commit()
         raise HTTPException(status_code=500, detail="Internal Server Error, User not added")
 
 
@@ -413,10 +515,16 @@ async def delete_recruiter_mongo(email:str =Query(...)):
         collection_name = email
         collection = db2[collection_name]
         collection.drop()
-        #await collection.update_one({"_id" : objid}, {'$set' : itemx})
+        # #await collection.update_one({"_id" : objid}, {'$set' : itemx})
+        # now = datetime.today()
+        # cursor.execute("INSERT INTO public.logs (date, log) VALUES (%s, %s)", (now, "Recruiter Deleted mongo",))
+        # connection.commit()
         return {"message": "Recruiter Deleted successfully"}
     except Exception as e:
         print(e)
+        # now = datetime.today()
+        # cursor.execute("INSERT INTO public.logs (date, log) VALUES (%s, %s)", (now, "Error",))
+        # connection.commit()
         raise HTTPException(status_code=500, detail="Internal Server Error, Recruiter not deleted")
 
 
@@ -428,8 +536,14 @@ async def delete_recruiter_mongo(email:str =Query(...)):
         collection.drop()
         #await collection.update_one({"_id" : objid}, {'$set' : itemx})
         return {"message": "User Deleted successfully"}
+        # now = datetime.today()
+        # cursor.execute("INSERT INTO public.logs (date, log) VALUES (%s, %s)", (now, "User Deleted Mongo",))
+        # connection.commit()
     except Exception as e:
         print(e)
+        # now = datetime.today()
+        # cursor.execute("INSERT INTO public.logs (date, log) VALUES (%s, %s)", (now, "Error",))
+        # connection.commit()
         raise HTTPException(status_code=500, detail="Internal Server Error, User not deleted")
 
 
@@ -442,15 +556,24 @@ async def new_recruiter_mongo(item: Recruiter):
         await db2.create_collection(collection_name)
         collection = db2[collection_name]
         await collection.insert_one(itemx)
+
+
+
+
         #save id to postgres also for future use
 
         #write to postgres
         cursor.execute("UPDATE public.business_login SET id = %s WHERE email = %s", (str(itemx["_id"]), str(itemx["email"]),))
         connection.commit()
-
+        # now = datetime.today()
+        # cursor.execute("INSERT INTO public.logs (date, log) VALUES (%s, %s)", (now, "New Recruiter Mongo",))
+        # connection.commit()
         return {"message": "Item created successfully & User updated successfully","id":itemx["_id"]}
     except Exception as e:
         print(e)
+        # now = datetime.today()
+        # cursor.execute("INSERT INTO public.logs (date, log) VALUES (%s, %s)", (now, "Error",))
+        # connection.commit()
         raise HTTPException(status_code=500, detail="Internal Server Error, User not added")
 
 #
@@ -462,12 +585,21 @@ async def get_user_mongo(email: str, item_id: str):
         item = await collection.find_one({"_id": item_id})
         if item:
             return item
+            # now = datetime.today()
+            # cursor.execute("INSERT INTO public.logs (date, log) VALUES (%s, %s)", (now, "Fetch user Mongo",))
+            # connection.commit()
         else:
+            # now = datetime.today()
+            # cursor.execute("INSERT INTO public.logs (date, log) VALUES (%s, %s)", (now, "Error",))
+            # connection.commit()
             return {"message": "Item not found"}
         # else:
         #     raise HTTPException(status_code=404, detail="Item not found")
     except Exception as e:
         print(e)
+        # now = datetime.today()
+        # cursor.execute("INSERT INTO public.logs (date, log) VALUES (%s, %s)", (now, "Error",))
+        # connection.commit()
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
 
@@ -479,13 +611,22 @@ async def get_user_mongo(email: str, item_id: str):
 
         item = await collection.find_one({"_id": item_id})
         if item:
+            # now = datetime.today()
+            # cursor.execute("INSERT INTO public.logs (date, log) VALUES (%s, %s)", (now, "Recruiter Fetch Mongo",))
+            # connection.commit()
             return item
         else:
+            # now = datetime.today()
+            # cursor.execute("INSERT INTO public.logs (date, log) VALUES (%s, %s)", (now, "Error",))
+            # connection.commit()
             return {"message": "Item not found"}
         # else:
         #     raise HTTPException(status_code=404, detail="Item not found")
     except Exception as e:
         print(e)
+        # now = datetime.today()
+        # cursor.execute("INSERT INTO public.logs (date, log) VALUES (%s, %s)", (now, "Error",))
+        # connection.commit()
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
 # ##UPDATE##
@@ -494,37 +635,68 @@ async def get_user_mongo(email: str, item_id: str):
 @app.get("/searchuserdetailsmongo/{phrase}",response_description="Stringified List of keywords seperated by comma")
 async def search_mongo(phrase: str):
     keywords = list(phrase.split(","))
+    print(keywords)
+    result = {"data": []}
     try:
-        for ix in keywords:
 
-            result = await db1.find({"$text": {"$search": str(ix).lower(), "$caseSensitive": False, "$diacriticSensitive": False}})
-            return json.dumps(result)
+
+        collections = await db1.list_collection_names()
+        print(collections)
+        print("1")
+        for collection in collections:
+            print(type(collection))
+            for ix in keywords:
+                res = db1[collection].find({"skills": str(ix).lower()})
+                while await res.fetch_next:
+                    result["data"].append(res.next_object())
+                print(res)
+
+            # result = await db1.find({"$text": {"$search": str(ix).lower(), "$caseSensitive": False, "$diacriticSensitive": False}})
+            # now = datetime.today()
+            # cursor.execute("INSERT INTO public.logs (date, log) VALUES (%s, %s)", (now, "Search success",))
+            # connection.commit()
+            # return json.dumps(result)
+        return result
     except Exception as e:
             print(e)
+            # now = datetime.today()
+            # cursor.execute("INSERT INTO public.logs (date, log) VALUES (%s, %s)", (now, "Error",))
+            # connection.commit()
             raise HTTPException(status_code=500, detail="Internal Server Error")
 
 
 @app.get("/searchrecruiterdetailsmongo/{phrase}",response_description="Stringified List of keywords seperated by comma")
 async def search_mongo(phrase: str):
     keywords = list(phrase.split(","))
+    result = {"data": []}
     try:
-        for ix in keywords:
+        collections = await db2.list_collection_names()
+        for collection in collections:
+            for ix in keywords:
+                res = db2[collection].find({"project_area_details": str(ix).lower()})
+                while await res.fetch_next:
+                    result["data"].append(res.next_object())
+                print(res)
 
-            result = await db2.find({"$text": {"$search": str(ix).lower(), "$caseSensitive": False, "$diacriticSensitive": False}})
-            return json.dumps(result)
+
+
+        return result
     except Exception as e:
             print(e)
+            # now = datetime.today()
+            # cursor.execute("INSERT INTO public.logs (date, log) VALUES (%s, %s)", (now, "Error",))
+            # connection.commit()
             raise HTTPException(status_code=500, detail="Internal Server Error")
 
 #FILTERING
 @app.get("/filteruserdetailsmongo/",response_description="Queried List of keywords seperated by comma")
 async def searchfreelancer(
 
-        skills: Optional[list] = Query(None),
+        skills: Optional[str] = Query(None),
         experience: Optional[int] = Query(None),
         pay: Optional[int] = Query(None),
         ratings: Optional[int] = Query(None),
-        category: Optional[list] = Query(None),
+        category: Optional[str] = Query(None),
 ):
     try:
         collection = db1
@@ -539,22 +711,37 @@ async def searchfreelancer(
         if ratings:
             filter_dict['ratings'] = {'$gte': ratings}
         if category:
-            filter_dict['category'] = {'$all':category.split('')}
+            filter_dict['category'] = {'$all':category}
 
         # search for freelancers in MongoDB with matching filter conditions
-        result = collection.find(filter_dict).sort([('score', -1)]).limit(10)
+        collections = await db1.list_collection_names()
+        result = {"data": []}
+        for collection in collections:
+            # sort by score in descending order
+            res = db1[collection].find(filter_dict)
+            while await res.fetch_next:
+                if len(result["data"]) < 10:
+                    result["data"].append(res.next_object())
+                else:
+                    break
+
+
+
 
     # return result as JSON string
-        return json.dumps(result)
+        return result
     except Exception as e:
         print(e)
+        # now = datetime.today()
+        # cursor.execute("INSERT INTO public.logs (date, log) VALUES (%s, %s)", (now, "Error",))
+        # connection.commit()
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
 # @app.get("/filterrecruiterdetailsmongo/",response_description="Queried List of keywords seperated by comma")
 @app.get("/filterbuyerdetailsmongo/",response_description="Queried List of keywords seperated by comma")
 async def searchproject(
-        category:Optional[list] = Query(None),
-        skills: Optional[list] = Query(None),
+        category:Optional[str] = Query(None),
+        skills: Optional[str] = Query(None),
         min_budget: Optional[int] = Query(None),
         ratings: Optional[int] = Query(None),
         experience: Optional[int] = Query(None),
@@ -566,7 +753,7 @@ async def searchproject(
         # create filter dictionary based on query parameters
         filter_dict = {}
         if category:
-            filter_dict['category'] = {'$all':category.split(',')}
+            filter_dict['category'] = {'$all':category}
         if skills:
             filter_dict['skills'] = {'$all': skills.split(',')}
         if min_budget:
@@ -579,12 +766,22 @@ async def searchproject(
             filter_dict['delivery_time'] = {'$gte': delivery_time}
 
         # search for freelancers in MongoDB with matching filter conditions
-        result = collection.find(filter_dict).sort([('score', -1)]).limit(10)
-        return json.dumps(result)
+        collections = await db2.list_collection_names()
+        result = {"data": []}
+        for collection in collections:
+            res = db2[collection].find(filter_dict)
+            while await res.fetch_next:
+                if len(result["data"]) < 10:
+                    result["data"].append(res.next_object())
+                else:
+                    break
+        return result
     except Exception as e:
         print(e)
+        # now = datetime.today()
+        # cursor.execute("INSERT INTO public.logs (date, log) VALUES (%s, %s)", (now, "Error",))
+        # connection.commit()
         raise HTTPException(status_code=500, detail="Internal Server Error")
-
 
 
 
@@ -617,6 +814,9 @@ async def upload_image( item: Uploader,file: UploadFile = File(...)):
         return {'url': url}
     except Exception as e:
         print(e)
+        # now = datetime.today()
+        # cursor.execute("INSERT INTO public.logs (date, log) VALUES (%s, %s)", (now, "Error",))
+        # connection.commit()
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
 
