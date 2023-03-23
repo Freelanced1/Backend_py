@@ -206,7 +206,7 @@ def callback(code: str, error: str = None):
         # id_info contains the user's information, can be used to check if user exist in database
         # User is authenticated, do something with id_info
         # print(id_info)
-        return {"token":access_token,"payload":json.dumps(id_info)} #id_info is a dictionary of all the user's info
+        return json.dumps({"token":access_token,"payload":id_info}) #id_info is a dictionary of all the user's info
 
 
 @app.get("/protected-resource")
