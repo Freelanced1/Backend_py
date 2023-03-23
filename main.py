@@ -228,10 +228,10 @@ async def person_exists(email: str):
             if item is None:
                 raise HTTPException(status_code=404, detail="Item not found")
             else:
-                return {"message": False}
+                return {"message": "Recruiter exists"}
 
         else:
-            return {"message": True}
+            return {"message": "User exists"}
 
     except (Exception, psycopg2.Error) as error:
         print("Error while connecting to PostgreSQL", error)
