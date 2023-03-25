@@ -27,7 +27,7 @@ sql_user = "freelance@postgresfreelance"
 sql_host = "postgresfreelance.postgres.database.azure.com"
 sql_pass = "Rogers@123"
 sql_db = "postgresfreelance"
-mongodb_url = "mongodb://freelancedapi:CjViwnSIvg8Ri724f9CP05mkaeCLDoLK4ynu5UxtNeYMxwxjueNzqddyNdIUfp7YMFCgPtvWErsbACDb9vRtnA==@freelancedapi.mongo.cosmos.azure.com:10255/?ssl=true&replicaSet=globaldb&retrywrites=false&maxIdleTimeMS=120000&appName=@freelancedapi@"
+mongodb_url = "mongodb+srv://admin:admin@freelancedmongo.hthxmyp.mongodb.net/?retryWrites=true&w=majority"
 
 # Google OAuth2 credentials
 GOOGLE_CLIENT_ID = "825776228723-acjhna5u0tf3730fj8eam3vbk3irr23u.apps.googleusercontent.com"
