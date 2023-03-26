@@ -126,6 +126,8 @@ class User(BaseModel):
     skills: Optional[list] = Query(...)
     proficency: Optional[list] = Query(...)
     certificates: Optional[list] = Query(...)
+    category: Optional[str] = Query(...)
+    pay: Optional[str] = Query(...)
 
     class Config:
         allow_population_by_field_name = True
@@ -147,6 +149,7 @@ class Recruiter(BaseModel):
     timeline: Optional[bool] = Query(...)
     deadline: Optional[str] = Query(...)
     budget: Optional[str] = Query(...)
+    category: Optional[str] = Query(...)
 
     class Config:
         allow_population_by_field_name = True
@@ -418,6 +421,7 @@ async def update_user(email: str,item: Item):
 @app.put("/updaterecriter/{email}")
 async def update_recruiter(email: str, item: Item):
     try:
+
         cursor.execute("UPDATE public.business_login SET firstname = %s, lastname = %s WHERE email = %s", (item.firstname, item.lastname, email,))
         connection.commit()
         # now = datetime.today()
@@ -466,6 +470,12 @@ async def new_user_mongo(item: User):
         itemx["_id"] = str(ObjectId())
         await db1.create_collection(collection_name)
         collection = db1[collection_name]
+        #convert skills to lower case and convert to string seperated by comma
+        itemx["skills"] = [x.lower() for x in itemx["skills"]] #convert to lower case
+        itemx["skills"] = ",".join(itemx["skills"]) #convert to string seperated by comma
+        #convert description to lower case
+        itemx["description"] = [x.lower() for x in itemx["description"]]  # convert to lower case
+        itemx["description"] = ",".join(itemx["description"])  # convert to string seperated by comma
         await collection.insert_one(itemx)
         # save id to postgres also for future use
 
@@ -490,6 +500,13 @@ async def update_user_mongo(item: User, objid:str =Query(...)):
         collection_name = str(item.email)
         itemx = item.dict()
         itemx["_id"] = objid
+        # convert skills to lower case and convert to string seperated by comma
+        itemx["skills"] = [x.lower() for x in itemx["skills"]]  # convert to lower case
+        itemx["skills"] = ",".join(itemx["skills"])  # convert to string seperated by comma
+        # convert description to lower case and convert to string seperated by comma
+        itemx["description"] = [x.lower() for x in itemx["description"]]  # convert to lower case
+        itemx["description"] = ",".join(itemx["description"])  # convert to string seperated by comma
+
 
         collection = db1[collection_name]
 
@@ -512,6 +529,9 @@ async def update_recruiter_mongo(item: Recruiter, objid:str =Query(...)):
         collection_name = str(item.email)
         itemx = item.dict()
         itemx["_id"] = objid
+        # Convert project description to lower case and convert to string seperated by comma
+        itemx["project_description"] = [x.lower() for x in itemx["project_description"]]  # convert to lower case
+        itemx["project_description"] = ",".join(itemx["project_description"])  # convert to string seperated by comma
 
         collection = db2[collection_name]
 
@@ -572,6 +592,9 @@ async def new_recruiter_mongo(item: Recruiter):
         collection_name = str(item.email)
         itemx = item.dict()
         itemx["_id"] = str(ObjectId())
+        # Convert project description to lower case and convert to string seperated by comma
+        itemx["project_description"] = [x.lower() for x in itemx["project_description"]]  # convert to lower case
+        itemx["project_description"] = ",".join(itemx["project_description"])  # convert to string seperated by comma
         await db2.create_collection(collection_name)
         collection = db2[collection_name]
         await collection.insert_one(itemx)
@@ -665,7 +688,9 @@ async def search_mongo(phrase: str):
         for collection in collections:
             print(type(collection))
             for ix in keywords:
-                res = db1[collection].find({"skills": str(ix).lower()})
+                #search dict to search based on description & skills
+                search_dict = {"$or": [{"description": {"$in": [str(ix).lower()]}}, {"skills": {"$in": [str(ix).lower()]}}]}
+                res = db1[collection].find(search_dict)
                 while await res.fetch_next:
                     result["data"].append(res.next_object())
                 print(res)
@@ -692,7 +717,8 @@ async def search_mongo(phrase: str):
         collections = await db2.list_collection_names()
         for collection in collections:
             for ix in keywords:
-                res = db2[collection].find({"project_area_details": str(ix).lower()})
+                search_dict = {"$or": [{"project_area_details": {"$in":[str(ix).lower()]}},{"skills": {"$in":[str(ix).lower()]}}]}
+                res = db2[collection].find(search_dict)
                 while await res.fetch_next:
                     result["data"].append(res.next_object())
                 print(res)
