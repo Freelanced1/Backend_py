@@ -474,8 +474,8 @@ async def new_user_mongo(item: User):
         itemx["skills"] = [x.lower() for x in itemx["skills"]] #convert to lower case
         itemx["skills"] = ",".join(itemx["skills"]) #convert to string seperated by comma
         #convert description to lower case
-        itemx["description"] = [x.lower() for x in itemx["description"]]  # convert to lower case
-        itemx["description"] = ",".join(itemx["description"])  # convert to string seperated by comma
+        # itemx["description"] = [x.lower() for x in itemx["description"]]  # convert to lower case
+        # itemx["description"] = ",".join(itemx["description"])  # convert to string seperated by comma
         await collection.insert_one(itemx)
         # save id to postgres also for future use
 
@@ -504,8 +504,8 @@ async def update_user_mongo(item: User, objid:str =Query(...)):
         itemx["skills"] = [x.lower() for x in itemx["skills"]]  # convert to lower case
         itemx["skills"] = ",".join(itemx["skills"])  # convert to string seperated by comma
         # convert description to lower case and convert to string seperated by comma
-        itemx["description"] = [x.lower() for x in itemx["description"]]  # convert to lower case
-        itemx["description"] = ",".join(itemx["description"])  # convert to string seperated by comma
+        # itemx["description"] = [x.lower() for x in itemx["description"]]  # convert to lower case
+        # itemx["description"] = ",".join(itemx["description"])  # convert to string seperated by comma
 
 
         collection = db1[collection_name]
@@ -530,9 +530,10 @@ async def update_recruiter_mongo(item: Recruiter, objid:str =Query(...)):
         itemx = item.dict()
         itemx["_id"] = objid
         # Convert project description to lower case and convert to string seperated by comma
-        itemx["project_description"] = [x.lower() for x in itemx["project_description"]]  # convert to lower case
-        itemx["project_description"] = ",".join(itemx["project_description"])  # convert to string seperated by comma
-
+        # itemx["project_description"] = [x.lower() for x in itemx["project_description"]]  # convert to lower case
+        # itemx["project_description"] = ",".join(itemx["project_description"])  # convert to string seperated by comma
+        itemx["skills"] = [x.lower() for x in itemx["skills"]]  # convert to lower case
+        itemx["skills"] = ",".join(itemx["skills"])  # convert to string seperated by comma
         collection = db2[collection_name]
 
         await collection.update_one({"_id" : objid}, {'$set' : itemx})
@@ -593,8 +594,9 @@ async def new_recruiter_mongo(item: Recruiter):
         itemx = item.dict()
         itemx["_id"] = str(ObjectId())
         # Convert project description to lower case and convert to string seperated by comma
-        itemx["project_description"] = [x.lower() for x in itemx["project_description"]]  # convert to lower case
-        itemx["project_description"] = ",".join(itemx["project_description"])  # convert to string seperated by comma
+        #convert skills to lowercase and convert to string seperated by comma
+        itemx["skills"] = [x.lower() for x in itemx["skills"]]  # convert to lower case
+        itemx["skills"] = ",".join(itemx["skills"])  # convert to string seperated by comma
         await db2.create_collection(collection_name)
         collection = db2[collection_name]
         await collection.insert_one(itemx)
@@ -626,6 +628,8 @@ async def get_user_mongo(email: str, item_id: str):
 
         item = await collection.find_one({"_id": item_id})
         if item:
+            #skills string to list
+            item["skills"] = item["skills"].split(",")
             return item
             # now = datetime.today()
             # cursor.execute("INSERT INTO public.logs (date, log) VALUES (%s, %s)", (now, "Fetch user Mongo",))
@@ -653,6 +657,7 @@ async def get_user_mongo(email: str, item_id: str):
 
         item = await collection.find_one({"_id": item_id})
         if item:
+            item["skills"] = item["skills"].split(",")
             # now = datetime.today()
             # cursor.execute("INSERT INTO public.logs (date, log) VALUES (%s, %s)", (now, "Recruiter Fetch Mongo",))
             # connection.commit()
