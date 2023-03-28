@@ -20,6 +20,7 @@ from fastapi_socketio import SocketManager
 from datetime import date, datetime
 import socketio
 import pymongo
+import logging
 
 
 #
@@ -229,7 +230,9 @@ async def person_exists(email: str):
             cursor.execute("SELECT * FROM public.business_login WHERE email = %s", (email,))
             item = cursor.fetchone()
             if item is None:
+                logging.info("User does not exist")
                 raise HTTPException(status_code=404, detail="Item not found")
+
             else:
                 return {"message": "Recruiter exists"}
 
@@ -237,21 +240,27 @@ async def person_exists(email: str):
             return {"message": "User exists"}
 
     except (Exception, psycopg2.Error) as error:
+        logging.error(error)
         print("Error while connecting to PostgreSQL", error)
         raise HTTPException(status_code=500, detail="Internal Server Error")
-@app.get("/userexists/{email}")
-async def user_exists(email: str):
-    try:
-        cursor.execute("SELECT * FROM public.user_login_1 WHERE email = %s", (email,))
-        item = cursor.fetchone()
-        if item is None:
-            raise HTTPException(status_code=404, detail="Item not found")
-        else:
-            return {"message": "User exists"}
 
-    except (Exception, psycopg2.Error) as error:
-        print("Error while connecting to PostgreSQL", error)
-        raise HTTPException(status_code=500, detail="Internal Server Error")
+
+
+
+
+# @app.get("/userexists/{email}")
+# async def user_exists(email: str):
+#     try:
+#         cursor.execute("SELECT * FROM public.user_login_1 WHERE email = %s", (email,))
+#         item = cursor.fetchone()
+#         if item is None:
+#             raise HTTPException(status_code=404, detail="Item not found")
+#         else:
+#             return {"message": "User exists"}
+#
+#     except (Exception, psycopg2.Error) as error:
+#         print("Error while connecting to PostgreSQL", error)
+#         raise HTTPException(status_code=500, detail="Internal Server Error")
 
 
 
@@ -273,6 +282,7 @@ async def new_user(item: Item):
         # now = datetime.today()
         # cursor.execute("INSERT INTO public.logs (date, log) VALUES (%s, %s)", (now, "Error",))
         # connection.commit()
+        logging.error(error)
         return{"message":error}
 
 
