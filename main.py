@@ -127,8 +127,6 @@ class User(BaseModel):
     skills: Optional[list] = Query(...)
     proficency: Optional[list] = Query(...)
     certificates: Optional[list] = Query(...)
-    category: Optional[str] = Query(...)
-    pay: Optional[str] = Query(...)
 
     class Config:
         allow_population_by_field_name = True
@@ -150,7 +148,6 @@ class Recruiter(BaseModel):
     timeline: Optional[bool] = Query(...)
     deadline: Optional[str] = Query(...)
     budget: Optional[str] = Query(...)
-    category: Optional[str] = Query(...)
 
     class Config:
         allow_population_by_field_name = True
@@ -754,7 +751,7 @@ async def searchfreelancer(
 
         skills: Optional[str] = Query(None),
         experience: Optional[int] = Query(None),
-        pay: Optional[int] = Query(None),
+        # pay: Optional[int] = Query(None),
         ratings: Optional[int] = Query(None),
         category: Optional[str] = Query(None),
 ):
@@ -766,12 +763,11 @@ async def searchfreelancer(
             filter_dict['skills'] = {'$all': skills.split(',')}
         if experience:
             filter_dict['experience'] = {'$gte': experience}
-        if pay:
-            filter_dict['pay'] = {'$lte': pay}
         if ratings:
             filter_dict['ratings'] = {'$gte': ratings}
         if category:
-            filter_dict['category'] = {'$all':category}
+            filter_dict['occupation'] = {'$all':category}
+
 
         # search for freelancers in MongoDB with matching filter conditions
         collections = await db1.list_collection_names()
@@ -803,8 +799,6 @@ async def searchproject(
         category:Optional[str] = Query(None),
         skills: Optional[str] = Query(None),
         min_budget: Optional[int] = Query(None),
-        ratings: Optional[int] = Query(None),
-        experience: Optional[int] = Query(None),
         delivery_time: Optional[int] = Query(None),
 
 ):
@@ -813,15 +807,11 @@ async def searchproject(
         # create filter dictionary based on query parameters
         filter_dict = {}
         if category:
-            filter_dict['category'] = {'$all':category}
+            filter_dict['project_area'] = {'$all':category}
         if skills:
             filter_dict['skills'] = {'$all': skills.split(',')}
         if min_budget:
             filter_dict['budget'] = {'$gte': min_budget}
-        if ratings:
-            filter_dict['ratings'] = {'$gte': ratings}
-        if experience:
-            filter_dict['experience'] = {'$lte': experience}
         if delivery_time:
             filter_dict['delivery_time'] = {'$gte': delivery_time}
 
