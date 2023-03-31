@@ -112,21 +112,26 @@ class Item(BaseModel):
 
 class User(BaseModel):
     email: str = Query(...)
-    phone: str = Query(...)
-    profile_pic: Optional[str] = Query(...)
-    worksamples: Optional[list] = Query(...)
-    website: Optional[str] = Query(...)
-    description: Optional[str] = Query(...)
-    language: Optional[str] = Query(...)
-    occupation: Optional[str] = Query(...)
-    experience: Optional[int] = Query(...)
-    university: Optional[str] = Query(...)
-    uni_country: Optional[str] = Query(...)
-    uni_degree: Optional[str] = Query(...)
-    uni_grad_date: Optional[str] = Query(...)
-    skills: Optional[list] = Query(...)
-    proficency: Optional[list] = Query(...)
-    certificates: Optional[list] = Query(...)
+    phone: Optional[str] = Query(None)
+    profile_pic: Optional[str] = Query(None)
+    worksamples: Optional[list] = Query(None)
+    website: Optional[str] = Query(None)
+    description: Optional[str] = Query(None)
+    language: Optional[str] = Query(None)
+    occupation: Optional[str] = Query(None)
+    experience: Optional[int] = Query(None)
+    university: Optional[str] = Query(None)
+    uni_country: Optional[str] = Query(None)
+    uni_degree: Optional[str] = Query(None)
+    uni_grad_date: Optional[str] = Query(None)
+    skills: Optional[list] = Query(None)
+    proficiency: Optional[list] = Query(None)
+    certificates: Optional[list] = Query(None)
+    payment_status: Optional[bool] = Query(None)
+    payment_date: Optional[str] = Query(None)
+    order_status: Optional[bool] = Query(None)
+    recruiter_mail: Optional[str] = Query(None)
+    ratings: Optional[int] = Query(None)
 
     class Config:
         allow_population_by_field_name = True
@@ -136,18 +141,19 @@ class User(BaseModel):
 
 class Recruiter(BaseModel):
     email: str = Query(...)
-    phone: str = Query(...)
-    profile_pic: Optional[str] = Query(...)
-    language: Optional[str] = Query(...)
-    occupation: Optional[str] = Query(...)
-    project_area: Optional[list] = Query(...)
-    project_area_details: Optional[list] = Query(...)
-    documents: Optional[list] = Query(...)
-    skills: Optional[list] = Query(...)
-    proficency: Optional[list] = Query(...)
-    timeline: Optional[bool] = Query(...)
-    deadline: Optional[str] = Query(...)
-    budget: Optional[str] = Query(...)
+    phone: Optional[str] = Query(None)
+    profile_pic: Optional[str] = Query(None)
+    language: Optional[str] = Query(None)
+    occupation: Optional[str] = Query(None)
+    project_area: Optional[list] = Query(None)
+    project_area_details: Optional[list] = Query(None)
+    documents: Optional[list] = Query(None)
+    skills: Optional[list] = Query(None)
+    proficiency: Optional[list] = Query(None)
+    timeline: Optional[bool] = Query(None)
+    deadline: Optional[str] = Query(None)
+    budget: Optional[str] = Query(None)
+    user_email: Optional[str] = Query(None)
 
     class Config:
         allow_population_by_field_name = True
@@ -158,9 +164,6 @@ class Recruiter(BaseModel):
 #
 class Uploader(BaseModel):
     email: str = Query(...)
-
-
-    #More Fields#
 
 
 # Add a new user to the database
@@ -506,28 +509,37 @@ async def update_user_mongo(item: User, objid:str =Query(...)):
     try:
         collection_name = str(item.email)
         itemx = item.dict()
-        itemx["_id"] = objid
+        # itemx["_id"] = objid
+        update_dict = {}
         # convert skills to lower case and convert to string seperated by comma
-        itemx["skills"] = [x.lower() for x in itemx["skills"]]  # convert to lower case
-        itemx["skills"] = ",".join(itemx["skills"])  # convert to string seperated by comma
+        if itemx["skills"]:
+            itemx["skills"] = [x.lower() for x in itemx["skills"]]  # convert to lower case
+            itemx["skills"] = ",".join(itemx["skills"])  # convert to string seperated by comma
+            update_dict["skills"] = itemx["skills"]
+        if itemx["description"]:
+            itemx["description"] = [x.lower() for x in itemx["description"]]
+            itemx["description"] = ",".join(itemx["description"])
+            update_dict["description"] = itemx["description"]
+
         # convert description to lower case and convert to string seperated by comma
         # itemx["description"] = [x.lower() for x in itemx["description"]]  # convert to lower case
         # itemx["description"] = ",".join(itemx["description"])  # convert to string seperated by comma
 
 
         collection = db1[collection_name]
-
-        await collection.update_one({"_id" : objid}, {'$set' : itemx})
+    #
+        await collection.update_one({"_id" : objid}, {'$set' : update_dict})
         # now = datetime.today()
         # cursor.execute("INSERT INTO public.logs (date, log) VALUES (%s, %s)", (now, "User Updated Mongo",))
         # connection.commit()
-        return {"message": "User updated successfully", "id": itemx["_id"]}
+        return {"message": "User updated successfully", "id": objid}
     except Exception as e:
         print(e)
         # now = datetime.today()
         # cursor.execute("INSERT INTO public.logs (date, log) VALUES (%s, %s)", (now, "Error",))
         # connection.commit()
         raise HTTPException(status_code=500, detail="Internal Server Error, User not added")
+
 
 
 @app.put("/updateRecruitermongo/")  #Recruiter Update
