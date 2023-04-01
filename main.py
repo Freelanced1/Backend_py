@@ -508,27 +508,19 @@ async def new_user_mongo(item: User):
 async def update_user_mongo(item: User, objid:str =Query(...)):
     try:
         collection_name = str(item.email)
-        itemx = item.dict()
-        # itemx["_id"] = objid
-        update_dict = {}
-        # convert skills to lower case and convert to string seperated by comma
-        if itemx["skills"]:
-            itemx["skills"] = [x.lower() for x in itemx["skills"]]  # convert to lower case
-            itemx["skills"] = ",".join(itemx["skills"])  # convert to string seperated by comma
-            update_dict["skills"] = itemx["skills"]
-        if itemx["description"]:
-            itemx["description"] = [x.lower() for x in itemx["description"]]
-            itemx["description"] = ",".join(itemx["description"])
-            update_dict["description"] = itemx["description"]
+        itemg = item.dict(exclude_unset=True)
 
-        # convert description to lower case and convert to string seperated by comma
-        # itemx["description"] = [x.lower() for x in itemx["description"]]  # convert to lower case
-        # itemx["description"] = ",".join(itemx["description"])  # convert to string seperated by comma
+        itemg["_id"] = objid
+
+        # convert skills to lower case and convert to string seperated by comma
+        if "skills" in itemg.keys() and itemg["skills"] !=None:
+            itemg["skills"] = [x.lower() for x in itemg["skills"]]  # convert to lower case
+            itemg["skills"] = ",".join(itemg["skills"])  # convert to string seperated by comma
 
 
         collection = db1[collection_name]
     #
-        await collection.update_one({"_id" : objid}, {'$set' : update_dict})
+        await collection.update_one({"_id" : objid}, {'$set' : itemg})
         # now = datetime.today()
         # cursor.execute("INSERT INTO public.logs (date, log) VALUES (%s, %s)", (now, "User Updated Mongo",))
         # connection.commit()
@@ -546,17 +538,19 @@ async def update_user_mongo(item: User, objid:str =Query(...)):
 async def update_recruiter_mongo(item: Recruiter, objid:str =Query(...)):
     try:
         collection_name = str(item.email)
-        itemx = item.dict()
-        itemx["_id"] = objid
+        itemg = item.dict(exclude_unset=True)
+
+        itemg["_id"] = objid
         # Convert project description to lower case and convert to string seperated by comma
         # itemx["project_description"] = [x.lower() for x in itemx["project_description"]]  # convert to lower case
         # itemx["project_description"] = ",".join(itemx["project_description"])  # convert to string seperated by comma
-        itemx["skills"] = [x.lower() for x in itemx["skills"]]  # convert to lower case
-        itemx["skills"] = ",".join(itemx["skills"])  # convert to string seperated by comma
+        if "skills" in itemg.keys() and itemg["skills"] !=None:
+            itemg["skills"] = [x.lower() for x in itemg["skills"]]  # convert to lower case
+            itemg["skills"] = ",".join(itemg["skills"])  # convert to string seperated by comma
         collection = db2[collection_name]
 
-        await collection.update_one({"_id" : objid}, {'$set' : itemx})
-        return {"message": "Recruiter updated successfully", "id": itemx["_id"]}
+        await collection.update_one({"_id" : objid}, {'$set' : itemg})
+        return {"message": "Recruiter updated successfully", "id": itemg["_id"]}
         # now = datetime.today()
         # cursor.execute("INSERT INTO public.logs (date, log) VALUES (%s, %s)", (now, "Updated Recruiter Mongo",))
         # connection.commit()
@@ -648,7 +642,8 @@ async def get_user_mongo(email: str, item_id: str):
         item = await collection.find_one({"_id": item_id})
         if item:
             #skills string to list
-            item["skills"] = item["skills"].split(",")
+            if item["skills"]:
+                item["skills"] = item["skills"].split(",")
             return item
             # now = datetime.today()
             # cursor.execute("INSERT INTO public.logs (date, log) VALUES (%s, %s)", (now, "Fetch user Mongo",))
