@@ -770,8 +770,6 @@ async def searchfreelancer(
             filter_dict['skills'] = {'$all': skills.split(',')}
         if experience:
             filter_dict['experience'] = {'$gte': experience}
-        if pay:
-            filter_dict['pay'] = {'$lte': pay}
         if ratings:
             filter_dict['ratings'] = {'$gte': ratings}
         if category:
