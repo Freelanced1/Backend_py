@@ -642,7 +642,7 @@ async def get_user_mongo(email: str, item_id: str):
         item = await collection.find_one({"_id": item_id})
         if item:
             #skills string to list
-            if item["skills"]:
+            if type(item["skills"]) == str:
                 item["skills"] = item["skills"].split(",")
             return item
             # now = datetime.today()
@@ -665,13 +665,15 @@ async def get_user_mongo(email: str, item_id: str):
 
 
 @app.get("/getrecruitermongo/{email}/{item_id}")
-async def get_user_mongo(email: str, item_id: str):
+async def get_recruiter_mongo(email: str, item_id: str):
     try:
         collection = db2[email]
 
         item = await collection.find_one({"_id": item_id})
         if item:
-            item["skills"] = item["skills"].split(",")
+
+            if type(item["skills"]) == str:
+                item["skills"] = item["skills"].split(",")
             # now = datetime.today()
             # cursor.execute("INSERT INTO public.logs (date, log) VALUES (%s, %s)", (now, "Recruiter Fetch Mongo",))
             # connection.commit()
