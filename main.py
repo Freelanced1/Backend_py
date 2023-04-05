@@ -19,6 +19,9 @@ from sse_starlette.sse import EventSourceResponse
 from fastapi_socketio import SocketManager
 from datetime import date, datetime
 import socketio
+import asyncio
+import websockets
+import time
 import pymongo
 import logging
 
@@ -75,6 +78,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 socket_manager = SocketManager(app=app,cors_allowed_origins="*", mount_location='/ws')
 # sio = socketio.Client()
 
@@ -111,27 +115,27 @@ class Item(BaseModel):
 
 
 class User(BaseModel):
-    email: str = Query(...)
-    phone: Optional[str] = Query(...)
-    profile_pic: Optional[str] = Query(...)
-    worksamples: Optional[list] = Query(...)
-    website: Optional[str] = Query(...)
-    description: Optional[str] = Query(...)
-    language: Optional[str] = Query(...)
-    occupation: Optional[str] = Query(...)
-    experience: Optional[int] = Query(...)
-    university: Optional[str] = Query(...)
-    uni_country: Optional[str] = Query(...)
-    uni_degree: Optional[str] = Query(...)
-    uni_grad_date: Optional[str] = Query(...)
-    skills: Optional[list] = Query(...)
-    proficiency: Optional[list] = Query(...)
-    certificates: Optional[list] = Query(...)
-    payment_status: Optional[bool] = Query(default=False)
-    payment_date: Optional[str] = Query(...)
-    order_status: Optional[bool] = Query(default=False)
-    recruiter_mail: Optional[str] = Query(...)
-    ratings: Optional[int] = Query(...)
+    email: str = Query(None)
+    phone: Optional[str] = Query(None)
+    profile_pic: Optional[str] = Query(None)
+    worksamples: Optional[list] = Query(None)
+    website: Optional[str] = Query(None)
+    description: Optional[str] = Query(None)
+    language: Optional[str] = Query(None)
+    occupation: Optional[str] = Query(None)
+    experience: Optional[int] = Query(None)
+    university: Optional[str] = Query(None)
+    uni_country: Optional[str] = Query(None)
+    uni_degree: Optional[str] = Query(None)
+    uni_grad_date: Optional[str] = Query(None)
+    skills: Optional[list] = Query(None)
+    proficiency: Optional[list] = Query(None)
+    certificates: Optional[list] = Query(None)
+    payment_status: Optional[bool] = Query(None)
+    payment_date: Optional[str] = Query(None)
+    order_status: Optional[bool] = Query(None)
+    recruiter_mail: Optional[str] = Query(None)
+    ratings: Optional[int] = Query(None)
 
     class Config:
         allow_population_by_field_name = True
@@ -140,20 +144,20 @@ class User(BaseModel):
 
 
 class Recruiter(BaseModel):
-    email: str = Query(...)
-    phone: Optional[str] = Query(...)
-    profile_pic: Optional[str] = Query(...)
-    language: Optional[str] = Query(...)
-    occupation: Optional[str] = Query(...)
-    project_area: Optional[list] = Query(...)
-    project_area_details: Optional[list] = Query(...)
-    documents: Optional[list] = Query(...)
-    skills: Optional[list] = Query(...)
-    proficiency: Optional[list] = Query(...)
-    timeline: Optional[bool] = Query(default=False)
-    deadline: Optional[str] = Query(...)
-    budget: Optional[str] = Query(...)
-    user_email: Optional[str] = Query(...)
+    email: str = Query(None)
+    phone: Optional[str] = Query(None)
+    profile_pic: Optional[str] = Query(None)
+    language: Optional[str] = Query(None)
+    occupation: Optional[str] = Query(None)
+    project_area: Optional[list] = Query(None)
+    project_area_details: Optional[list] = Query(None)
+    documents: Optional[list] = Query(None)
+    skills: Optional[list] = Query(None)
+    proficiency: Optional[list] = Query(None)
+    timeline: Optional[bool] = Query(None)
+    deadline: Optional[str] = Query(None)
+    budget: Optional[str] = Query(None)
+    user_email: Optional[str] = Query(None)
 
     class Config:
         allow_population_by_field_name = True
@@ -510,7 +514,7 @@ async def update_user_mongo(item: User, objid:str =Query(...)):
         collection_name = str(item.email)
         itemg = item.dict(exclude_unset=True)
 
-        itemg["_id"] = objid
+        # itemg["_id"] = objid
 
         # convert skills to lower case and convert to string seperated by comma
         if "skills" in itemg.keys() and itemg["skills"] !=None:
