@@ -24,6 +24,10 @@ import websockets
 import time
 import pymongo
 import logging
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.websockets import WebSocket
+
 
 
 #
@@ -70,6 +74,7 @@ app = FastAPI(
     openapi_url="/api/v0.1.1/openapi.json",
 )
 
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -79,7 +84,11 @@ app.add_middleware(
 )
 
 
-socket_manager = SocketManager(app=app,cors_allowed_origins="*", mount_location='/ws')
+
+# Initialize the SocketManager
+socket_manager = SocketManager(app=app, cors_allowed_origins="*")
+
+# socket_manager = SocketManager(app=app,cors_allowed_origins="*", mount_location='/ws')
 # sio = socketio.Client()
 
 
@@ -885,6 +894,20 @@ async def upload_image( item: Uploader,file: UploadFile = File(...)):
 
 #SOCKET IO
 
+# Add the WebSocket route with a path parameter
+@app.websocket("/ws/{path:path}")
+async def websocket_endpoint(websocket: WebSocket, path: str):
+    await socket_manager.connect(websocket)
+    try:
+        # Wait for messages from the client
+        while True:
+            data = await websocket.receive_text()
+            print(f"Message received from {websocket.sid}: {data}")
+    except:
+        await socket_manager.disconnect(websocket)
+
+
+# Add the socket.io event handlers
 @socket_manager.on("connect")
 async def connect(sid, environ):
     print(f"New client connected: {sid}")
@@ -916,15 +939,17 @@ async def leave_room(sid, data):
     await socket_manager.leave_room(sid, data["room"])
 
 @socket_manager.on("get_clients")
-async def get_clients(sid):
-    clients = await socket_manager.get_clients()
-    print(f"Current clients: {clients}")
+async def get_clients(sid, data):
+    room = data.get("room")
+    if room:
+        clients = list(socket_manager.rooms.get(room, set()))
+        await socket_manager.emit("clients_list", {"clients": clients}, room=sid)
+
 
 @socket_manager.on("get_rooms")
 async def get_rooms(sid):
     rooms = await socket_manager.get_rooms()
     print(f"Current rooms: {rooms}")
-
 
 
 
